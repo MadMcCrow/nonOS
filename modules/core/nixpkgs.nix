@@ -1,33 +1,27 @@
 # nixpkgs.nix
 # define how nonOS gets its nixpkgs
-nonOS:
+{modConfig, mkOptions, ...}:
 {
-  config,
   lib,
-  pkgs,
+  config,
   ...
 }:
-with nonOS;
-let
-  os = mod "nixpkgs" config;
-in
-with lib;
-with os;
+with (modConfig config);
 {
   options = mkOptions {
     # global option to allow unfree packages in other modules
-    _unfreePackages = mkOption {
+    _unfreePackages = with lib; mkOption {
       description = "accepted unfree packages";
       default = [ ];
       type = with types; listOf nonEmptyStr;
     };
     # allow moving the configuration folder
-    _dir = mkOption {
+    _dir = with lib; mkOption {
       description = "configuration directory";
       default = "/etc/${nonOS.name}";
       type = types.path;
     };
-    sources = mkOption {
+    sources = with lib; mkOption {
       description = ''
         the npins source of nixpkgs
         use :
@@ -43,13 +37,12 @@ with os;
     };
   };
 
-  config = mkConfig {
+  config = mkIfEnable {
     nix = {
-      registry.nixpkgs.to =
-        mkIf (cfg.sources != null) {
-          type = "path";
-          path = cfg.sources;
-        };
+      registry.nixpkgs.to = mkIf (cfg.sources != null) {
+        type = "path";
+        path = cfg.sources;
+      };
 
       nixPath = [
         "nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos"

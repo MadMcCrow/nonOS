@@ -7,11 +7,13 @@
   ...
 }:
 let
-  mkMod = dir: (map (x: lib.modules.importApply x nonOS) (import-tree.leafs dir));
+  mkMod = dir: (map (x: lib.modules.importApply x (nonOS dir)) (import-tree.leafs dir));
 in
 {
   #  disks, format, boot, networking, updates
   core = mkMod ./core;
   # desktop environment
   desktop = mkMod ./desktop;
+  # setup image
+  storage = mkMod ./storage;
 }

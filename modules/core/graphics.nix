@@ -1,21 +1,17 @@
 # graphics.nix
 # define how nonOS handles GPUs (mostly AMD)
-nonOS:
+{modConfig, mkOptions, ...}:
 {
-  config,
   lib,
+  config,
   pkgs,
   ...
 }:
-with lib;
-with nonOS;
-let
-  os = mod "graphics" config;
-in
+with (modConfig config);
 {
-  options = os.mkOptions { amd.enable = mkEnableOption "AMD Specific optimisations"; };
+  options = mkOptions { amd.enable = lib.mkEnableOption "AMD Specific optimisations"; };
 
-  config = os.mkConfig {
+  config = os.mkIfEnable {
     hardware = {
       # amd specific :
       amdgpu = mkIf os.cfg.amd.enable {
@@ -29,7 +25,7 @@ in
       };
     };
 
-    environment = mkIf os.cfg.amd.enable {
+    environment = mkIf cfg.amd.enable {
       systemPackages = with pkgs; [
         lact # Linux AMDGPU Controller
         clinfo # to test opencl setup
@@ -37,7 +33,7 @@ in
       variables.AMD_VULKAN_ICD = "RADV"; # force use of radv
     };
 
-    systemd = mkIf os.cfg.amd.enable {
+    systemd = mkIf cfg.amd.enable {
       # enable rocm for amd gpus
       tmpfiles.rules =
         let
@@ -58,6 +54,6 @@ in
     };
 
     # force enable rocm support if amd gpu is present
-    nixpkgs.config.rocmSupport = os.cfg.amd.enable;
+    nixpkgs.config.rocmSupport = cfg.amd.enable;
   };
 }

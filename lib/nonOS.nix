@@ -5,65 +5,36 @@ inputs@{
   lib,
   ...
 }:
+modulePath:
+let
+  moduleName = lib.baseNameOf modulePath;
+  meta = import ./meta.nix inputs;
+in
 with builtins;
-rec {
+{
   # provide values and shortcuts
-  inherit inputs;
-  meta = (import ./meta.nix inputs);
+  inherit inputs meta;
   inherit (meta) name;
   mkPrio = lib.mkOverride 990; # mkDefault but higher priority
 
-  mod =
-    prefix: config:
-    let
-      # filter globals out of attrs
-      filterGlobals = neg: attrs: lib.filterAttrs (n: _: (lib.hasPrefix "_" n) == neg) attrs;
-      pl = lib.optionals (prefix != "") (lib.splitString "." prefix);
+  modConfig = config: rec{
+    # pkgs = self.packages.${config.nixpkgs.hostPlatform.system};
+    cfg = config.${meta.name}.${moduleName};
+    mkIfEnable = cAttr: lib.mkIf cfg.enable cAttr;
+  };
 
-      # is this module enabled, recursive
-      enabled =
-        let
-          isEnabledAncestor =
-            p:
-            let
-              node = lib.attrByPath (p ++ [ "enable" ]) null config.${meta.name};
-            in
-            if node == false then
-              false
-            else if p == [ ] then
-              true
-            else
-              isEnabledAncestor (lib.init p);
-        in
-        config.${name}.enable && isEnabledAncestor pl;
-    in
-    {
-      inherit enabled;
-
-      pkgs = self.packages.${config.nixpkgs.hostPlatform.system};
-
-      # cfg getter gets globals and specific
-      cfg = (filterGlobals true config.${name}) // (lib.attrByPath pl { } config.${name});
-
-      # set options :
-      mkOptions = optAttr: {
-        ${name} =
-          # add globals
-          (filterGlobals true optAttr)
-          # and then we add all the other attribute by their path prefixed
-          // (lib.setAttrByPath pl (
-            filterGlobals false optAttr
-            // {
-              enable =
-                let
-                  optPath = lib.concatStringsSep "." ([ name ] ++ pl);
-                in
-                lib.mkEnableOption optPath // { default = true; };
-            }
-          ));
+  # set options :
+  mkOptions = optAttr: {
+    ${meta.name} = {
+      enable = lib.mkEnableOption "" // {
+        default = true;
       };
-
-      # set config :
-      mkConfig = c: lib.mkIf enabled c;
+      ${moduleName} = {
+        enable = lib.mkEnableOption "" // {
+          default = true;
+        };
+      }
+      // optAttr;
     };
+  };
 }

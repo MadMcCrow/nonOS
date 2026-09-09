@@ -1,20 +1,16 @@
 # boot.nix
 # define how nonOS boots
-nonOS:
+# customization.nix
+# replace nixOS by nonOS in the various config files
+{modConfig, mkOptions, inputs, ...}:
 {
-  config,
   lib,
-  pkgs,
+  config,
   ...
 }:
-with lib;
-with nonOS;
-let
-  os = mod "boot" config;
-in
-with os;
+with (modConfig config);
 {
-  imports = [ nonOS.inputs.lanzaboote.nixosModules.lanzaboote ];
+  imports = [ inputs.lanzaboote.nixosModules.lanzaboote ];
 
   options = mkOptions {
     # enable secureboot
@@ -25,19 +21,19 @@ with os;
     fido.enable = mkEnableOption "FIDO2 : https://nixos.org/manual/nixos/stable/#sec-luks-file-systems-fido2";
   };
 
-  config = mkConfig {
+  config = mkIfEnable {
     boot = {
       initrd.systemd = {
         enable = true;
-        fido2.enable = os.cfg.fido.enable;
+        fido2.enable = cfg.fido.enable;
       };
       tmp.cleanOnBoot = true;
       loader = {
-        systemd-boot.enable = !os.cfg.secureboot.enable;
+        systemd-boot.enable = !cfg.secureboot.enable;
         grub.enable = false;
       };
       lanzaboote = {
-        inherit (os.cfg.secureboot) enable;
+        inherit (cfg.secureboot) enable;
         pkiBundle = "${cfg._dir}/secureboot";
         configurationLimit = 5;
       };

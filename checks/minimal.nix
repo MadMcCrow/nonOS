@@ -10,7 +10,7 @@ in
     nixpkgs.hostPlatform = "x86_64-linux";
     nonOS = {
       enable = true;
-      storage.main = "/dev/nvme0n1";
+      storage.device = "/dev/nvme0n1";
     };
   };
 }
