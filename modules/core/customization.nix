@@ -1,6 +1,11 @@
 # customization.nix
 # replace nixOS by nonOS in the various config files
-{modConfig, mkOptions, meta, ...}:
+{
+  modConfig,
+  mkOptions,
+  meta,
+  ...
+}:
 {
   lib,
   config,

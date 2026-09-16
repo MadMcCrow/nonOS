@@ -12,10 +12,6 @@ let
         config = {
           networking.hostName = "image";
           nixpkgs.hostPlatform = "x86_64-linux";
-          nonOS = {
-            enable = true;
-            storage.device = "/dev/nvme0n1";
-          };
         };
       }
     ];
@@ -31,7 +27,7 @@ in
     }:
     {
       packages = {
-        inherit (vmConfig.config.system.build) image;
+        # inherit (vmConfig.config.system.build) images;
         # default = self.packages.${system}.run-image;
       };
     };

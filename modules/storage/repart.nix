@@ -1,6 +1,10 @@
 # repart.nix
 # partition and expand the OS based on a single device
-{ modConfig, mkOptions, ... }:
+{
+  modConfig,
+  mkOptions,
+  ...
+}:
 {
   lib,
   config,

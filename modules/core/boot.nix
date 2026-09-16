@@ -2,7 +2,12 @@
 # define how nonOS boots
 # customization.nix
 # replace nixOS by nonOS in the various config files
-{modConfig, mkOptions, inputs, ...}:
+{
+  modConfig,
+  mkOptions,
+  inputs,
+  ...
+}:
 {
   lib,
   config,

@@ -1,6 +1,10 @@
 # system.nix
 # define the update process in NonOS
-{modConfig, inputs, ... }:
+{
+  modConfig,
+  inputs,
+  ...
+}:
 {
   config,
   lib,
@@ -60,7 +64,10 @@ with (modConfig config);
     users = {
       defaultUserShell = pkgs.zsh;
       # enable mutable users if no user is set to admin
-      mutableUsers = !(any (u: u.group == "wheel" || (any (g: g == "wheel") u.extraGroups)) (attrValues config.users.users));
+      mutableUsers =
+        !(any (u: u.group == "wheel" || (any (g: g == "wheel") u.extraGroups)) (
+          attrValues config.users.users
+        ));
     };
   };
 }

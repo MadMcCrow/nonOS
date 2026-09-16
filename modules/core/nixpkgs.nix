@@ -1,6 +1,10 @@
 # nixpkgs.nix
 # define how nonOS gets its nixpkgs
-{modConfig, mkOptions, ...}:
+{
+  modConfig,
+  mkOptions,
+  ...
+}:
 {
   lib,
   config,
@@ -10,31 +14,37 @@ with (modConfig config);
 {
   options = mkOptions {
     # global option to allow unfree packages in other modules
-    _unfreePackages = with lib; mkOption {
-      description = "accepted unfree packages";
-      default = [ ];
-      type = with types; listOf nonEmptyStr;
-    };
+    _unfreePackages =
+      with lib;
+      mkOption {
+        description = "accepted unfree packages";
+        default = [ ];
+        type = with types; listOf nonEmptyStr;
+      };
     # allow moving the configuration folder
-    _dir = with lib; mkOption {
-      description = "configuration directory";
-      default = "/etc/${nonOS.name}";
-      type = types.path;
-    };
-    sources = with lib; mkOption {
-      description = ''
-        the npins source of nixpkgs
-        use :
-              ```
-                let sources = import ./npins;
-                ...
-                nonOS.nixpkgs.sources = sources.nixpkgs;
-              ```
-        to use the pins nixpkgs
-      '';
-      type = with types; nullOr path;
-      default = null;
-    };
+    _dir =
+      with lib;
+      mkOption {
+        description = "configuration directory";
+        default = "/etc/${nonOS.name}";
+        type = types.path;
+      };
+    sources =
+      with lib;
+      mkOption {
+        description = ''
+          the npins source of nixpkgs
+          use :
+                ```
+                  let sources = import ./npins;
+                  ...
+                  nonOS.nixpkgs.sources = sources.nixpkgs;
+                ```
+          to use the pins nixpkgs
+        '';
+        type = with types; nullOr path;
+        default = null;
+      };
   };
 
   config = mkIfEnable {

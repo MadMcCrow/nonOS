@@ -1,9 +1,11 @@
 # kde.nix
 # enable the kde desktop
-nonOS:
-# system.nix
-# define the update process in NonOS
-{modConfig, mkOptions, inputs, ... }:
+{
+  modConfig,
+  mkOptions,
+  inputs,
+  ...
+}:
 {
   config,
   lib,
@@ -13,10 +15,10 @@ nonOS:
 with (modConfig config);
 {
   # interface
-  options = mkOptions {};
+  options = mkOptions { };
 
   # implementation
-  config = os.mkIfEnable {
+  config = mkIfEnable {
     # set tag for version
     system.nixos.tags = [ "Desktop" ];
 

@@ -2,7 +2,11 @@
 # nix store is in an overlay fs
 # This means we have to handle the read-only filesystem
 # as well as the writable one.
-{modConfig, mkOptions, ...}:
+{
+  modConfig,
+  mkOptions,
+  ...
+}:
 {
   lib,
   config,
