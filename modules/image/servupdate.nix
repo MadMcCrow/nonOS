@@ -5,7 +5,11 @@
   mkOptions,
   ...
 }:
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  ...
+}:
 with (modConfig config);
 {
   options = mkOptions {
@@ -16,7 +20,6 @@ with (modConfig config);
         type = lib.types.port;
       };
     };
-
   };
 
   # NGINX is way overkill for that. a simpler http server (maybe nixos-containerized) would be simpler
@@ -31,7 +34,7 @@ with (modConfig config);
       listen = [
         {
           addr = "0.0.0.0";
-          port = cfg.port;
+          inherit (cfg) port;
         }
       ];
 
