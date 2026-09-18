@@ -14,13 +14,72 @@
 }:
 with (modConfig config);
 {
+  options = let
+  filesystemOption = {name, enabled, priority } : {
+    enable = lib.mkEnableOption "${name} fileSystems" // {default = enabled;};
+    device = lib.mkOption {
+      description = "block device to use for ${name} filesystem";
+      default = "/dev/disk/by-partlabel/${name}";
+      type = lib.types.nonEmptyStr;
+    };
+    fstype = lib.mkOption {
+      description = "file system type";
+      type = lib.types.nonEmptyStr;
+      default = "ext4";
+    };
+    priority = lib.mkOption {
+      description = "repart priority";
+      type = lib.types.int;
+      default = priority;
+    };
+  };
+  in mkOptions {
+    device = lib.mkOption {
+      description = "main installation device";
+      example = "/dev/nvme0n1";
+      type = lib.types.str;
+    };
+    var = filesystemOption {
+      name = "var";
+      enabled = true;
+      priority = 1000;
+    };
+    home = filesystemOption {
+      name = "home";
+      enabled = true;
+      priority = 2000;
+    };
+  };
+
   imports = [
     "${inputs.nixpkgs}/nixos/modules/image/repart.nix"
     "${inputs.nixpkgs}/nixos/modules/profiles/image-based-appliance.nix"
   ];
 
   config = mkIfEnable {
-    fileSystems = {
+
+    # add repart to initrd
+    boot.initrd.systemd.repart = {
+      enable = true;
+      inherit (cfg) device;
+    };
+
+    fileSystems =
+    let
+      cfgFilesystem = name :
+      lib.mkIf cfg.${name}.enable
+      {
+        "/${name}" = {
+          inherit (cfg.${name}) fstype device;
+        };
+      };
+    in
+    {
+      # root is on tmpfs
+      "/" = {
+        fsType = "tmpfs";
+        #options = [ "size=100m" ];
+      };
       # boot filesystem
       "/boot" = {
         device = "/dev/disk/by-partlabel/boot";
@@ -33,7 +92,12 @@ with (modConfig config);
         options = [ "ro" ];
         neededForBoot = true;
       };
-    };
+    }
+    # add our optional filesystems
+    // ( cfgFilesystem "home")
+    // ( cfgFilesystem "var");
+
+
 
     image.repart = {
       name = "image";
@@ -72,5 +136,18 @@ with (modConfig config);
         };
       }; # end of partitions
     };
+
+    # extra partitions :
+    systemd.repart.partitions =
+    let
+      cfgFilesystem = name : lib.mkIf cfg.${name}.enable {
+        "${name}" = {
+          Format = cfg.${name}.fstype;
+          Label = "${name}";
+          Type = "${name}";
+          Weight = cfg.${name}.priority;
+        };
+      };
+    in (cfgFilesystem "home" ) // (cfgFilesystem "var");
   };
 }
