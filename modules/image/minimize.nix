@@ -17,7 +17,21 @@ with (modConfig config);
       default = true;
     };
   };
-  config = lib.mkIf cfg.minimize {
+  config = lib.mkIf ((lib.traceVal cfg).enable && cfg.minimize) {
+
+    # basically :
+    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/image-based-appliance.nix
+
+    # The system cannot be rebuilt.
+    nix.enable = mkDefault false;
+    system.switch.enable = mkForce false;
+    users.mutableUsers = mkDefault false;
+
+    # The system avoids interpreters as much
+    # as possible to reduce its attack surface
+    boot.initrd.systemd.enable = mkDefault true;
+    networking.useNetworkd = mkDefault true;
+
     # speechd cause massive size
     services.speechd.enable = mkForce false;
     system.etc.overlay.enable = mkDefault true;

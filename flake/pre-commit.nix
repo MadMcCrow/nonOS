@@ -1,4 +1,4 @@
-# flake part module for apps
+# flake part module for pre-commit
 {
   withSystem,
   inputs,
@@ -14,7 +14,7 @@
       ...
     }:
     {
-      pre-commit.settings.hooks = {
+      pre-commit.settings.hooks = lib.mkIf false {
         nixpkgs-fmt.enable = true;
         # TODO :
         update-flake = {

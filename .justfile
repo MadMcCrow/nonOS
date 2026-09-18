@@ -3,7 +3,6 @@
 # .justfile :
 #       development justfile
 #
-mod ostool
 mod packages
 
 set quiet # do not echo commands
@@ -24,3 +23,6 @@ _update_template :
 
 _update_packages :
     just packages update
+
+options :
+    nix eval .#lib.options --json | jq

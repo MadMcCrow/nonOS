@@ -8,11 +8,13 @@ with builtins;
 let
   inherit (inputs.nixpkgs) lib;
 
+  rootdir = self + "/modules";
+
   # helper to import each and every module folder in ../modules
   mkMod =
     modulePath:
     let
-      moduleName = lib.baseNameOf modulePath;
+      moduleName = unsafeDiscardStringContext (lib.baseNameOf modulePath);
       meta = import (self + "/lib/meta.nix") { inherit lib; };
 
       moduleArgs = {
@@ -32,13 +34,13 @@ let
 
         # set options with the correct path :
         mkOptions = optAttr: {
-          options.${meta.name}.${moduleName} = optAttr;
+          ${meta.name}.${moduleName} = optAttr;
         };
       };
     in
     _: {
       # import apply all the submodules
-      imports = map (x: lib.modules.importApply x moduleArgs) (inputs.import-tree.leafs modulePath);
+      imports = map (x: lib.modules.importApply x moduleArgs) (inputs.import-tree.leaves (modulePath));
       # Add the root option for the module
       options.${meta.name}.${moduleName} = {
         enable = lib.mkEnableOption moduleName // {
@@ -52,25 +54,18 @@ let
   #    default = true;
   #
   #  };
-  moduleDirs =
+  modules =
     with builtins;
-    attrNames (
-      lib.filterAttrs (n: v: (match "^[. _].*" n != null) && v == "directory") (
-        readDir (self + "/modules")
+    mapAttrs (n: v: mkMod "${rootdir}/${n}") (
+      lib.filterAttrs (n: v: (match "^[. _].*" n == null) && v == "directory") (
+        readDir rootdir
       )
     );
 in
 rec {
   flake = {
-    nixosModules =
-      (builtins.listToAttrs (
-        map (x: {
-          name = x;
-          value = mkMod x;
-        }) moduleDirs
-      ))
-      // {
-        default = _: { imports = map mkMod moduleDirs; };
+    nixosModules = modules // {
+        default = _: { imports = builtins.attrValues modules; };
       };
     # evaluate system to get options :
     # nixosModulesOptions = (lib.nixosSystem { modules = [ (import (self + "/checks/minimal.nix") {

@@ -24,10 +24,10 @@ with (modConfig config);
       enable = true;
       extraConfig.pipewire = {
         "10-combined-sink.conf" = {
-          context.modules = [
+          "context.modules" = [
             {
-              name = "libpipewire-module-combine-stream";
-              args = {
+              "name" = "libpipewire-module-combine-stream";
+              "args" = {
                 node = {
                   name = "combined_sink";
                   description = "Combined Output";

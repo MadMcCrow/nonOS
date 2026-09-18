@@ -19,11 +19,11 @@ with (modConfig config);
 
   options = mkOptions {
     # enable secureboot
-    secureboot.enable = mkEnableOption "secureboot" // {
-      default = true;
+    secureboot.enable = lib.mkEnableOption "secureboot" // {
+      default = false;
     };
     # yubikey,onlykey, etc..
-    fido.enable = mkEnableOption "FIDO2 : https://nixos.org/manual/nixos/stable/#sec-luks-file-systems-fido2";
+    fido.enable = lib.mkEnableOption "FIDO2 : https://nixos.org/manual/nixos/stable/#sec-luks-file-systems-fido2";
   };
 
   config = mkIfEnable {

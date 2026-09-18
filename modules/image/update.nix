@@ -4,12 +4,14 @@
 # as well as the writable one.
 {
   modConfig,
+  mkOptions,
   inputs,
   ...
 }:
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 with (modConfig config);

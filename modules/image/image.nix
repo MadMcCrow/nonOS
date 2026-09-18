@@ -4,6 +4,7 @@
 # as well as the writable one.
 {
   modConfig,
+  mkOptions,
   inputs,
   ...
 }:
@@ -12,6 +13,12 @@
   config,
   ...
 }:
+let
+mkdevice = args : lib.mkOption {
+  type = lib.types.nonEmptyStr;
+  example = "/dev/disk/by-UUID/xxxx-xxxx-xxxx";
+} // args;
+in
 with (modConfig config);
 {
   options =
@@ -26,10 +33,9 @@ with (modConfig config);
           enable = lib.mkEnableOption "${name} fileSystems" // {
             default = enabled;
           };
-          device = lib.mkOption {
+          device = mkdevice {
             description = "block device to use for ${name} filesystem";
             default = "/dev/disk/by-partlabel/${name}";
-            type = lib.types.nonEmptyStr;
           };
           fstype = lib.mkOption {
             description = "file system type";
@@ -44,10 +50,8 @@ with (modConfig config);
         };
     in
     mkOptions {
-      device = lib.mkOption {
+      device = mkdevice {
         description = "main installation device";
-        example = "/dev/nvme0n1";
-        type = lib.types.str;
       };
       var = filesystemOption {
         name = "var";
@@ -63,7 +67,6 @@ with (modConfig config);
 
   imports = [
     "${inputs.nixpkgs}/nixos/modules/image/repart.nix"
-    "${inputs.nixpkgs}/nixos/modules/profiles/image-based-appliance.nix"
   ];
 
   config = mkIfEnable {

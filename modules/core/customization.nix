@@ -15,7 +15,7 @@ with (modConfig config);
 {
   options = mkOptions {
     # rename the OS
-    customise = mkEnableOption "customise nixOS to ${nonOS.name}" // {
+    customise = lib.mkEnableOption "customise nixOS to ${nonOS.name}" // {
       default = true;
     };
   };

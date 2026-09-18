@@ -17,7 +17,7 @@ let
           in
           pkgs.lib.nameValuePair (pkgs.lib.getName p) p
         )
-      ) (i: i.leafs (self + "/packages"))
+      ) (i: i.leaves (self + "/packages"))
     );
 in
 {

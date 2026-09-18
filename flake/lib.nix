@@ -14,5 +14,5 @@ let
   };
 in
 {
-  flake.lib = inputs.import-tree (i: i.map mksysPair) (i: i.leafs (self + "/lib"));
+  flake.lib = builtins.listToAttrs (inputs.import-tree (i: i.map mksysPair) (i: i.leaves (self + "/lib")));
 }

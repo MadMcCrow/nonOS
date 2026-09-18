@@ -4,28 +4,17 @@
   inputs,
   ...
 }:
-with builtins;
-with inputs.nixpkgs.lib;
 let
-  nonOSsystem = nixpkgs.lib.nixosSystem {
+  nonOSsystem = inputs.nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          modules = [
-          self.nixosModules.default
-          {
-            networking.hostName = "minimal";
-            nixpkgs.hostPlatform = "x86_64-linux";
-            nonOS = {
-              enable = true;
-              image.device = "/dev/nvme0n1";
-            };
-            boot.loader.grub.enable = false;
-            services.getty.autologinUser = "root";
-            users.users.root.initialPassword = "";
-          }];
+          modules = [ (self + "/test/configuration.nix") ];
+          specialArgs = {nonOS = self;};
     };
-  };
 in
 {
+  # expose our configuration
+  flake.nixosConfigurations = { inherit nonOSsystem; };
+
   perSystem =
     {
       pkgs,
@@ -35,7 +24,7 @@ in
     }:
     {
       packages = {
-        inherit (nonOSsystem.config.system.build) image;
+        image = lib.traceVal nonOSsystem.config.system.build.image;
         # default = self.packages.${system}.run-image;
       };
     };

@@ -33,17 +33,11 @@
             deadnix
             statix
             nixfmt-tree
-            nixos-install-tools
             npins
             just
+            git
+            fzf
           ];
-
-          shellHook = ''
-            git_root="$(git rev-parse --show-toplevel)"
-            echo "updating every pin in $git_root"
-            cd $git_root
-            ${pkgs.lib.getExe pkgs.just}
-          '';
         };
 
         llm = mkShellNoCC {

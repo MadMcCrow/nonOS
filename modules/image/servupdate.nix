@@ -8,6 +8,7 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 with (modConfig config);
@@ -21,6 +22,8 @@ with (modConfig config);
       };
     };
   };
+
+  config = mkIfEnable {
 
   # NGINX is way overkill for that. a simpler http server (maybe nixos-containerized) would be simpler
   services.nginx = {
@@ -64,4 +67,5 @@ with (modConfig config);
     "d /var/lib/fw-upload/upload 0750 nginx nginx -"
     "d /var/lib/fw-upload/upload/incoming 0750 nginx nginx -"
   ];
+  };
 }
