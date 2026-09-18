@@ -1,0 +1,107 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #111318;
+  color: #eee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+main {
+  width: 100%;
+  max-width: 560px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+}
+
+.hostname {
+  color: #999;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: #1b1e25;
+  border: 1px solid #2b2f38;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.info {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin-bottom: 24px;
+}
+
+.label {
+  color: #999;
+}
+
+.value {
+  font-family: ui-monospace, monospace;
+}
+
+input[type="file"] {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #383d48;
+  border-radius: 8px;
+  background: #121419;
+  color: #ddd;
+}
+
+button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #6c63ff;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #7b73ff;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+progress {
+  width: 100%;
+  height: 8px;
+  margin-top: 20px;
+}
+
+#status {
+  margin-top: 12px;
+  color: #aaa;
+  min-height: 1.4em;
+  white-space: pre-wrap;
+}
+
+.error {
+  color: #ff7373 !important;
+}
+
+.success {
+  color: #65d68a !important;
+}

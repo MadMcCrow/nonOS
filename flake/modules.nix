@@ -14,9 +14,10 @@ let
     let
       moduleName = lib.baseNameOf modulePath;
       meta = import (self + "/lib/meta.nix") { inherit lib; };
+
       moduleArgs = {
         # provide values and shortcuts
-        inherit inputs meta;
+        inherit inputs meta self;
         inherit (meta) name;
         mkPrio = lib.mkOverride 990; # mkDefault but higher priority
 
@@ -54,7 +55,7 @@ let
   moduleDirs =
     with builtins;
     attrNames (
-      lib.filterAttrs (n: v: (match "^[^. _]" n != null) && v == "directory") (
+      lib.filterAttrs (n: v: (match "^[. _].*" n != null) && v == "directory") (
         readDir (self + "/modules")
       )
     );

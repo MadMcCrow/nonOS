@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NixOS Appliance</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main>
+    <h1>NixOS Appliance</h1>
+    <div class="hostname" id="hostname">Loading...</div>
+
+    <div class="card">
+      <div class="info">
+        <div class="label">Current image</div>
+        <div class="value" id="version">—</div>
+
+        <div class="label">Architecture</div>
+        <div class="value" id="architecture">—</div>
+      </div>
+
+      <form id="update-form">
+        <input
+          id="file"
+          type="file"
+          accept=".squashfs,application/x-squashfs"
+          required
+        >
+
+        <button id="upload" type="submit">
+          Upload &amp; Update
+        </button>
+
+        <progress id="progress" value="0" max="100" hidden></progress>
+
+        <div id="status"></div>
+      </form>
+    </div>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
