@@ -17,7 +17,10 @@ let
       moduleName = unsafeDiscardStringContext (lib.baseNameOf modulePath);
       meta = import (self + "/lib/meta.nix") { inherit lib; };
 
-      moduleArgs = {
+      moduleArgs = path :
+      let
+        submodule = unsafeDiscardStringContext (lib.removeSuffix ".nix" (lib.baseNameOf path));
+      in{
         # provide values and shortcuts
         inherit inputs meta self;
         inherit (meta) name;
@@ -27,20 +30,21 @@ let
           # expose the flake packages :
           ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
           # expose the enable option
-          cfg = config.${meta.name}.${moduleName};
+          cfg = config.${meta.name}.${moduleName}.${submodule};
           # add config condition helper
           mkIfEnable = cAttr: lib.mkIf cfg.enable cAttr;
+          mkIfEnableAnd = cond : cAttr: lib.mkIf ( cfg.enable && cond) cAttr;
         };
 
         # set options with the correct path :
         mkOptions = optAttr: {
-          ${meta.name}.${moduleName} = optAttr;
+          ${meta.name}.${moduleName}.${submodule} = optAttr;
         };
       };
     in
     _: {
       # import apply all the submodules
-      imports = map (x: lib.modules.importApply x moduleArgs) (inputs.import-tree.leaves (modulePath));
+      imports = map (x: lib.modules.importApply x (moduleArgs x) ) (inputs.import-tree.leaves (modulePath));
       # Add the root option for the module
       options.${meta.name}.${moduleName} = {
         enable = lib.mkEnableOption moduleName // {

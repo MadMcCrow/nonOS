@@ -13,11 +13,11 @@
 with (modConfig config);
 {
   options = mkOptions {
-    minimize = lib.mkEnableOption "minimize storage usage by disabling useless derivations" // {
+    enable = lib.mkEnableOption "minimize storage usage by disabling useless derivations" // {
       default = true;
     };
   };
-  config = lib.mkIf ((lib.traceVal cfg).enable && cfg.minimize) {
+  config = mkIfEnableAnd cfg.minimize.en {
 
     # basically :
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/image-based-appliance.nix
