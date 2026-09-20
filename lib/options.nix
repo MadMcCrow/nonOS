@@ -11,17 +11,18 @@ let
 
   eval = lib.evalModules {
     specialArgs = {
-      pkgs = import nixpkgs {system = "x86_64-linux";};
+      pkgs = import nixpkgs { system = "x86_64-linux"; };
     };
-    modules = [ module ({
-      _module.check = false;
-      disabledModules = [
-        # avoid issues with
-         "${nixpkgs}/nixos/modules/image/repart.nix"
-      ];
-    }) ];
-
+    modules = [
+      module
+      {
+        _module.check = false;
+        disabledModules = [
+          # avoid issues with
+          "${nixpkgs}/nixos/modules/image/repart.nix"
+        ];
+      }
+    ];
   };
 in
-map (opt: lib.concatStringsSep "." opt.loc)
-  (lib.optionAttrSetToDocList eval.options)
+map (opt: lib.concatStringsSep "." opt.loc) (lib.optionAttrSetToDocList eval.options)

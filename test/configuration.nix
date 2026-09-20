@@ -1,4 +1,4 @@
-{nonOS, ... } : {
+{ nonOS, ... }: {
   imports = [
     nonOS.nixosModules.image
   ];

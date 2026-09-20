@@ -14,10 +14,13 @@
   ...
 }:
 let
-mkdevice = args : lib.mkOption {
-  type = lib.types.nonEmptyStr;
-  example = "/dev/disk/by-UUID/xxxx-xxxx-xxxx";
-} // args;
+  mkdevice =
+    args:
+    lib.mkOption {
+      type = lib.types.nonEmptyStr;
+      example = "/dev/disk/by-UUID/xxxx-xxxx-xxxx";
+    }
+    // args;
 in
 with (modConfig config);
 {

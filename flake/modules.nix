@@ -17,34 +17,36 @@ let
       moduleName = unsafeDiscardStringContext (lib.baseNameOf modulePath);
       meta = import (self + "/lib/meta.nix") { inherit lib; };
 
-      moduleArgs = path :
-      let
-        submodule = unsafeDiscardStringContext (lib.removeSuffix ".nix" (lib.baseNameOf path));
-      in{
-        # provide values and shortcuts
-        inherit inputs meta self;
-        inherit (meta) name;
-        mkPrio = lib.mkOverride 990; # mkDefault but higher priority
+      moduleArgs =
+        path:
+        let
+          submodule = unsafeDiscardStringContext (lib.removeSuffix ".nix" (lib.baseNameOf path));
+        in
+        {
+          # provide values and shortcuts
+          inherit inputs meta self;
+          inherit (meta) name;
+          mkPrio = lib.mkOverride 990; # mkDefault but higher priority
 
-        modConfig = config: rec {
-          # expose the flake packages :
-          ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
-          # expose the enable option
-          cfg = config.${meta.name}.${moduleName}.${submodule};
-          # add config condition helper
-          mkIfEnable = cAttr: lib.mkIf cfg.enable cAttr;
-          mkIfEnableAnd = cond : cAttr: lib.mkIf ( cfg.enable && cond) cAttr;
-        };
+          modConfig = config: rec {
+            # expose the flake packages :
+            ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
+            # expose the enable option
+            cfg = config.${meta.name}.${moduleName}.${submodule};
+            # add config condition helper
+            mkIfEnable = cAttr: lib.mkIf cfg.enable cAttr;
+            mkIfEnableAnd = cond: cAttr: lib.mkIf (cfg.enable && cond) cAttr;
+          };
 
-        # set options with the correct path :
-        mkOptions = optAttr: {
-          ${meta.name}.${moduleName}.${submodule} = optAttr;
+          # set options with the correct path :
+          mkOptions = optAttr: {
+            ${meta.name}.${moduleName}.${submodule} = optAttr;
+          };
         };
-      };
     in
     _: {
       # import apply all the submodules
-      imports = map (x: lib.modules.importApply x (moduleArgs x) ) (inputs.import-tree.leaves (modulePath));
+      imports = map (x: lib.modules.importApply x (moduleArgs x)) (inputs.import-tree.leaves modulePath);
       # Add the root option for the module
       options.${meta.name}.${moduleName} = {
         enable = lib.mkEnableOption moduleName // {
@@ -61,16 +63,14 @@ let
   modules =
     with builtins;
     mapAttrs (n: v: mkMod "${rootdir}/${n}") (
-      lib.filterAttrs (n: v: (match "^[. _].*" n == null) && v == "directory") (
-        readDir rootdir
-      )
+      lib.filterAttrs (n: v: (match "^[. _].*" n == null) && v == "directory") (readDir rootdir)
     );
 in
 rec {
   flake = {
     nixosModules = modules // {
-        default = _: { imports = builtins.attrValues modules; };
-      };
+      default = _: { imports = builtins.attrValues modules; };
+    };
     # evaluate system to get options :
     # nixosModulesOptions = (lib.nixosSystem { modules = [ (import (self + "/checks/minimal.nix") {
     #  nixpkgs = inputs.nixpkgs;

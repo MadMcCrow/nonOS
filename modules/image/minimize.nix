@@ -18,7 +18,6 @@ with (modConfig config);
     };
   };
   config = mkIfEnableAnd cfg.minimize.en {
-
     # basically :
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/image-based-appliance.nix
 

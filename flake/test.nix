@@ -6,10 +6,12 @@
 }:
 let
   nonOSsystem = inputs.nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [ (self + "/test/configuration.nix") ];
-          specialArgs = {nonOS = self;};
+    system = "x86_64-linux";
+    modules = [ (self + "/test/configuration.nix") ];
+    specialArgs = {
+      nonOS = self;
     };
+  };
 in
 {
   # expose our configuration
