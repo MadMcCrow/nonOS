@@ -17,7 +17,7 @@ with (modConfig config);
       default = true;
     };
   };
-  config = mkIfEnableAnd cfg.minimize.en {
+  config = mkIfEnableAnd cfg.enable ( with lib; {
     # basically :
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/image-based-appliance.nix
 
@@ -39,5 +39,5 @@ with (modConfig config);
     environment.defaultPackages = mkDefault [ ];
     documentation.info.enable = mkDefault false;
     documentation.nixos.enable = mkDefault false;
-  };
+  });
 }

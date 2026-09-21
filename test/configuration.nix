@@ -7,7 +7,7 @@
     nixpkgs.hostPlatform = "x86_64-linux";
     nonOS.image = {
       enable = true;
-      var.priority = 2000;
+      filesystems.var.priority = 2000;
       # device = "/dev/nvme0n1";
     };
     boot.loader.grub.enable = false;
