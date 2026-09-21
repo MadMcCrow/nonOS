@@ -32,10 +32,11 @@ let
             # expose the flake packages :
             ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
             # expose the enable option
+            mod = config.${meta.name}.${moduleName};
             cfg = config.${meta.name}.${moduleName}.${submodule};
             # add config condition helper
-            mkIfEnable = cAttr: lib.mkIf cfg.enable cAttr;
-            mkIfEnableAnd = cond: cAttr: lib.mkIf (cfg.enable && cond) cAttr;
+            mkIfEnable = cAttr: lib.mkIf mod.enable cAttr;
+            mkIfEnableAnd = cond: cAttr: lib.mkIf (mod.enable && cond) cAttr;
           };
 
           # set options with the correct path :

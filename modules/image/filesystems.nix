@@ -40,7 +40,7 @@ with (modConfig config);
             description = "block device to use for ${name} filesystem";
             default = "/dev/disk/by-partlabel/${name}";
           };
-          fstype = lib.mkOption {
+          fsType = lib.mkOption {
             description = "file system type";
             type = lib.types.nonEmptyStr;
             default = "ext4";
@@ -85,7 +85,7 @@ with (modConfig config);
           name:
           lib.mkIf cfg.${name}.enable {
             "/${name}" = {
-              inherit (cfg.${name}) fstype device;
+              inherit (cfg.${name}) fsType device;
             };
           };
       in

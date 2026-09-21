@@ -17,7 +17,7 @@ with (modConfig config);
   options =
     with lib;
     mkOptions {
-      nixStore.writable = {
+      writable = {
         device = mkOption {
           default = null;
           description = ''
@@ -33,7 +33,7 @@ with (modConfig config);
   config = mkIfEnable {
     # the image read-only squashfs store
     fileSystems =
-      if cfg.nixStore.device != null then
+      if cfg.writable.device != null then
         {
           "/nix/.rw-store" = {
             device = cfg.nixStore.device;
@@ -55,6 +55,7 @@ with (modConfig config);
       else
         {
           "/nix/store" = {
+            fsType = "squashfs";
             device = "/nix/.ro-store";
             options = [
               "bind"
@@ -64,6 +65,6 @@ with (modConfig config);
         };
 
     # enable nix if we have a writable nix-store
-    nix.enable = if cfg.nixStore.device != null then lib.mkForce true else lib.mkDefault false;
+    nix.enable = if cfg.writable.device != null then lib.mkForce true else lib.mkDefault false;
   };
 }

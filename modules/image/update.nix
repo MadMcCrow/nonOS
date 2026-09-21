@@ -126,6 +126,7 @@ with (modConfig config);
       config =
         { pkgs, ... }:
         {
+          nix.daemon.enable = true;
           system.stateVersion = config.system.stateVersion;
 
           environment.systemPackages = [ pkgs.busybox ];
