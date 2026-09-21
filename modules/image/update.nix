@@ -98,7 +98,6 @@ with (modConfig config);
         };
     };
 
-
     # host-side dirs, shared into the container by bind mount
     systemd.tmpfiles.rules = with cfg.paths; [
       "d ${incoming} 0750 root root -"
@@ -123,43 +122,41 @@ with (modConfig config);
         isReadOnly = false;
       };
 
-      config =
-        { pkgs, ... }:
-        {
-          nix.daemon.enable = true;
-          system.stateVersion = config.system.stateVersion;
+      config = { pkgs, ... }: {
+        nix.daemon.enable = true;
+        system.stateVersion = config.system.stateVersion;
 
-          environment.systemPackages = [ pkgs.busybox ];
+        environment.systemPackages = [ pkgs.busybox ];
 
-          environment.etc."httpd.conf".text = ''
-            H:/www
-            *.cgi:/bin/sh
+        environment.etc."httpd.conf".text = ''
+          H:/www
+          *.cgi:/bin/sh
+        '';
+
+        environment.etc."www/cgi-bin/upload.cgi" = {
+          mode = "0755";
+          text = ''
+            #!/bin/sh
+            # name comes from query string, sanitized to a safe charset
+            name=$(printf '%s' "$QUERY_STRING" | sed -n 's/^name=//p' | tr -cd 'A-Za-z0-9._-')
+            if [ -z "$name" ]; then
+              printf 'Status: 400\r\n\r\nbad name\n'
+              exit 0
+            fi
+            cat > "/incoming/$name"
+            printf 'Status: 200\r\n\r\nok\n'
           '';
+        };
 
-          environment.etc."www/cgi-bin/upload.cgi" = {
-            mode = "0755";
-            text = ''
-              #!/bin/sh
-              # name comes from query string, sanitized to a safe charset
-              name=$(printf '%s' "$QUERY_STRING" | sed -n 's/^name=//p' | tr -cd 'A-Za-z0-9._-')
-              if [ -z "$name" ]; then
-                printf 'Status: 400\r\n\r\nbad name\n'
-                exit 0
-              fi
-              cat > "/incoming/$name"
-              printf 'Status: 200\r\n\r\nok\n'
-            '';
-          };
-
-          systemd.services.httpd = {
-            description = "busybox uploader";
-            wantedBy = [ "multi-user.target" ];
-            serviceConfig = {
-              ExecStart = "${lib.getExe pkgs.busybox} httpd -f -v -p ${toString cfg.container.port} -h /www -c /etc/httpd.conf";
-              Restart = "on-failure";
-            };
+        systemd.services.httpd = {
+          description = "busybox uploader";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${lib.getExe pkgs.busybox} httpd -f -v -p ${toString cfg.container.port} -h /www -c /etc/httpd.conf";
+            Restart = "on-failure";
           };
         };
+      };
     };
 
     # host side : batch complete -> commit, verify, apply, maybe reboot
@@ -171,7 +168,10 @@ with (modConfig config);
     systemd.services."fw-upload-commit" = {
       description = "commit uploaded update batch, verify, apply, maybe reboot";
       serviceConfig.Type = "oneshot";
-      path = [ pkgs.coreutils config.systemd.package ];
+      path = [
+        pkgs.coreutils
+        config.systemd.package
+      ];
       script = with cfg.paths; ''
         set -euo pipefail
         cd "${incoming}"

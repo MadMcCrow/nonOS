@@ -79,38 +79,38 @@ with (modConfig config);
       inherit (cfg) device;
     };
 
-    fileSystems =
-      let
-        cfgFilesystem =
-          name:
-          lib.mkIf cfg.${name}.enable {
-            "/${name}" = {
-              inherit (cfg.${name}) fsType device;
-            };
+    fileSystems = lib.mkMerge (
+      [
+        {
+          # root is on tmpfs
+          "/" = {
+            fsType = "tmpfs";
+            #options = [ "size=100m" ];
           };
-      in
-      {
-        # root is on tmpfs
-        "/" = {
-          fsType = "tmpfs";
-          #options = [ "size=100m" ];
-        };
-        # boot filesystem
-        "/boot" = {
-          device = "/dev/disk/by-partlabel/boot";
-          fsType = "vfat";
-        };
-        # the image read-only squashfs store
-        "/nix/.ro-store" = {
-          device = "/dev/disk/by-partlabel/nix-ro-store";
-          fsType = "squashfs";
-          options = [ "ro" ];
-          neededForBoot = true;
-        };
-      }
-      # add our optional filesystems
-      // (cfgFilesystem "home")
-      // (cfgFilesystem "var");
+          # boot filesystem
+          "/boot" = {
+            device = "/dev/disk/by-partlabel/boot";
+            fsType = "vfat";
+          };
+          # the image read-only squashfs store
+          "/nix/.ro-store" = {
+            device = "/dev/disk/by-partlabel/nix-ro-store";
+            fsType = "squashfs";
+            options = [ "ro" ];
+            neededForBoot = true;
+          };
+          # add our optional filesystems
+        }
+      ]
+      ++ (map (
+        name:
+        lib.mkIf cfg.${name}.enable {
+          "/${name}" = {
+            inherit (cfg.${name}) fsType device;
+          };
+        }
+      ) "home" "var")
+    );
 
     image.repart = {
       name = "image";
@@ -151,9 +151,9 @@ with (modConfig config);
     };
 
     # extra partitions :
-    systemd.repart.partitions =
-      let
-        cfgFilesystem =
+    systemd.repart.partitions = lib.mkMerge (
+      map
+        (
           name:
           lib.mkIf cfg.${name}.enable {
             "${name}" = {
@@ -162,8 +162,12 @@ with (modConfig config);
               Type = "${name}";
               Weight = cfg.${name}.priority;
             };
-          };
-      in
-      (cfgFilesystem "home") // (cfgFilesystem "var");
+          }
+        )
+        [
+          "home"
+          "var"
+        ]
+    );
   };
 }
