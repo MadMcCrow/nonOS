@@ -109,7 +109,7 @@ with (modConfig config);
             inherit (cfg.${name}) fsType device;
           };
         }
-      ) "home" "var")
+      ) ["home" "var"])
     );
 
     image.repart = {
@@ -157,7 +157,7 @@ with (modConfig config);
           name:
           lib.mkIf cfg.${name}.enable {
             "${name}" = {
-              Format = cfg.${name}.fstype;
+              Format = cfg.${name}.fsType;
               Label = "${name}";
               Type = "${name}";
               Weight = cfg.${name}.priority;
