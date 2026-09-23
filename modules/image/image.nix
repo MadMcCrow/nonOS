@@ -14,5 +14,5 @@ with (modConfig config);
   # options = mkOptions { };
   config = mkIfEnable {
     system.image.id = "nonOS";
-    };
+  };
 }
