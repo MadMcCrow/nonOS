@@ -28,7 +28,7 @@ let
           nixpkgs.hostPlatform = system;
           nonOS.image = {
             enable = true;
-            filesystems.var.priority = 2000;
+            repart.var.priority = 2000;
             # device = "/dev/nvme0n1";
           };
           boot.loader.grub.enable = false;

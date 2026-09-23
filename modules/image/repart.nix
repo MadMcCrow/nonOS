@@ -94,7 +94,7 @@ with (modConfig config);
     };
 
     # add the filesystems
-    filesystem = lib.mkMerge (
+    fileSystems = lib.mkMerge (
       map
         (
           name:
