@@ -22,14 +22,16 @@ let
     inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
+        "${inputs.nixpkgs}/nixos/modules/image/repart.nix"
+        # add our image module, as-is
         nonOS.nixosModules.image
         {
+          # this may end up being a problem
           networking.hostName = "image";
           nixpkgs.hostPlatform = system;
           nonOS.image = {
             enable = true;
             repart.var.priority = 2000;
-            # device = "/dev/nvme0n1";
           };
           boot.loader.grub.enable = false;
           services.getty.autologinUser = "root";

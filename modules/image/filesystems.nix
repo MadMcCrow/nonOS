@@ -9,6 +9,7 @@
   ...
 }:
 {
+  pkgs,
   lib,
   config,
   ...
@@ -20,11 +21,12 @@ with (modConfig config);
   ];
 
   config = mkIfEnable {
+
     fileSystems = {
       # root is on tmpfs
       "/" = {
         fsType = "tmpfs";
-        #options = [ "size=100m" ];
+        #options = [ "size=256" ];
       };
       # boot filesystem
       "/boot" = {
@@ -42,6 +44,7 @@ with (modConfig config);
     };
 
     image.repart = {
+      enable = true;
       name = "image";
       partitions = {
         # read-only store image
