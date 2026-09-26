@@ -22,7 +22,6 @@ let
     inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
-        "${inputs.nixpkgs}/nixos/modules/image/repart.nix"
         # add our image module, as-is
         nonOS.nixosModules.image
         {
@@ -84,9 +83,9 @@ in
     }:
     {
       packages = {
-        image = run-qemu {
+        run-image = run-qemu {
           inherit pkgs;
-          image = imageSystem.config.system.build.images.raw-efi;
+          image = imageSystem.config.system.build.image;
         };
         #  # default = self.packages.${system}.run-image;
       };
