@@ -21,7 +21,6 @@ with (modConfig config);
   ];
 
   config = mkIfEnable {
-
     fileSystems = {
       # root is on tmpfs
       "/" = {
