@@ -94,10 +94,8 @@ with (modConfig config);
       in
       {
         description = "resolve disk backing nix-ro-store partition";
-        before = [ "systemd-repart.service" ];
+        before = [ "systemd-repart.service"  (mkDeviceUnit cfg.device) ];
         after = [
-          "systemd-udev-settle.service"
-          "sysinit.target"
           (mkDeviceUnit nix-store)
         ];
          unitConfig.DefaultDependencies = false;
