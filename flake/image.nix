@@ -16,7 +16,7 @@ let
   };
 
   # build an image
-  systemImage =
+  systemConfig =
     {
       system ? "x86_64-linux",
       nonOS ? self,
@@ -48,7 +48,9 @@ let
       specialArgs = {
         inherit nonOS;
       };
-    }).config.system.build.image;
+    });
+
+  systemImage = args: (systemConfig args).config.system.build.image;
 
   resizeImage =
     {
@@ -78,10 +80,9 @@ let
     writeShellScriptBin "repart-image-qemu" ''
       set -euo pipefail
        DISK_IMAGE="demo-disk.raw"
-       if [[ ! -f "$DISK_IMAGE" ]]; then
-         cp ${image}/image.raw "$DISK_IMAGE"
-         chmod +w "$DISK_IMAGE"
-       fi
+       rm "$DISK_IMAGE" && true
+       cp ${image}/image.raw "$DISK_IMAGE"
+       chmod +w "$DISK_IMAGE"
       ${lib.getExe qemu} \
         -smp 4 \
         -m 2048 \
@@ -96,7 +97,7 @@ in
 {
   # expose our configuration
   flake.nixosConfigurations = {
-    demo = systemImage { };
+    demo = systemConfig { };
   };
 
   perSystem =
