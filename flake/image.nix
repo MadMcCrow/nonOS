@@ -26,23 +26,21 @@ let
       modules = [
         # add our image module, as-is
         nonOS.nixosModules.image
+        nonOS.nixosModules.debug
         {
           # this may end up being a problem
           networking.hostName = lib.mkDefault "image";
           system.stateVersion = lib.mkDefault "26.11";
           nixpkgs.hostPlatform = system;
-          nonOS.image = {
+          nonOS = {
+            image = {
             enable = true;
             repart.var.priority = 2000;
           };
+          debug.root.enable = true;
+          };
           # make sure not to use grub
           boot.loader.grub.enable = false;
-          # unsafe
-          services.getty.autologinUser = "root";
-          users.allowNoPasswordLogin = true;
-          users.users.root.hashedPassword = "$y$j9T$efeFSSCdXT41oO/YqlvSX.$61j5A7D9GxkpWUJREaWCAtXke9.rnrDRbH6YoLyXJH4";
-          boot.initrd.systemd.emergencyAccess = "$y$j9T$efeFSSCdXT41oO/YqlvSX.$61j5A7D9GxkpWUJREaWCAtXke9.rnrDRbH6YoLyXJH4";
-          systemd.enableEmergencyMode = true;
         }
       ];
       specialArgs = {

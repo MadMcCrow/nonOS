@@ -79,11 +79,6 @@ with (modConfig config);
   config = mkIfEnable {
     # add repart to initrd
     boot.initrd.systemd = {
-      # don't wait too much
-      settings.Manager = {
-          DefaultTimeoutStartSec = "10s";
-          DefaultTimeoutStopSec = "10s";
-      };
       # make sure that the script can run
       storePaths = with pkgs; [
         "${util-linux}/bin/lsblk"
@@ -96,7 +91,7 @@ with (modConfig config);
       # detect disk and run the actual repart
       services.systemd-repart =
         let
-          repartRun = pkgs.writeShellScript "repart-run" ''
+          repartRun = pkgs.writeShellScriptBin "repart-run" ''
             set -euo pipefail
             dev="$(readlink -f "${nix-store}")"
             disk="/dev/$(lsblk -ndo PKNAME "$dev")"
@@ -111,13 +106,14 @@ with (modConfig config);
           requires = [ (mkDeviceUnit nix-store) ];
           serviceConfig.ExecStart = lib.mkForce [
             ""
-            "${repartRun}"
+            "${lib.getExe repartRun}"
           ];
           before = map (x: mkDeviceUnit cfg.${x}.device) [
             "home"
             "var"
           ];
           path = with pkgs; [
+            repartRun
             util-linux
             coreutils
           ];
@@ -132,7 +128,8 @@ with (modConfig config);
           lib.mkIf cfg.${name}.enable {
             "/${name}" = {
               inherit (cfg.${name}) fsType device;
-              options = [ "x-systemd.device-timeout=10s" ];
+              # it's either there, or it isn't !
+              options = [ "defaults" "x-systemd.device-timeout=10s" ];
             };
           }
         )
