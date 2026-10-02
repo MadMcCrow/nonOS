@@ -1,5 +1,5 @@
-# customization.nix
-# replace nixOS by nonOS in the various config files
+# system.nix
+# replace nixOS by nonOS in the various system files
 {
   modConfig,
   mkOptions,
@@ -13,14 +13,13 @@
 }:
 with (modConfig config);
 {
-  options = mkOptions {
-    # rename the OS
-    customise = lib.mkEnableOption "customise nixOS to ${nonOS.name}" // {
-      default = true;
-    };
-  };
+  # no options : we just use the general option
+  # options = mkOptions { };
+
   config = mkIfEnable {
     environment = {
+      # we don't change the ID because it's used by programs
+      # to identify how they should behave
       etc."os-release".text = with meta; ''
         NAME="${name}"
         PRETTY_NAME="${name}"
@@ -37,9 +36,7 @@ with (modConfig config);
 
     system = with meta; {
       # let the user specify the state version themselves
-      # but forgetting defining it shouldn't matter
-      stateVersion = "26.05";
-      # We customise the
+      stateVersion = lib.mkDefault "26.05";
       nixos.label = "${name}";
       nixos.variantName = "${name}";
     };

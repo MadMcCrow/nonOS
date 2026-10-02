@@ -40,6 +40,10 @@
       inputs.pre-commit.inputs.flake-compat.follows = "flake-compat";
     };
 
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak/?ref=latest";
+    };
+
     # python
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";

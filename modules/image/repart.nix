@@ -35,7 +35,10 @@ let
     );
 
   # repart devices :
-  devices = map (x: (cfg.${x} // { name=x; })) ["home" "var"];
+  devices = map (x: (cfg.${x} // { name = x; })) [
+    "home"
+    "var"
+  ];
 in
 {
   options =
@@ -112,56 +115,69 @@ in
             "${lib.getExe repartRun}"
           ];
           before = map (x: mkDeviceUnit x.device) devices;
-          path = with pkgs; [
-            repartRun
-            util-linux
-            coreutils
-          ] ++ (
-            let
+          path =
+            with pkgs;
+            [
+              repartRun
+              util-linux
+              coreutils
+            ]
+            ++ (
+              let
                 rules = [
-                  { pattern = "ext[234]"; package = pkgs.e2fsprogs; }
-                  { pattern = "btrfs";    package = pkgs.btrfs-progs; }
-                  { pattern = "xfs";      package = pkgs.xfsprogs; }
+                  {
+                    pattern = "ext[234]";
+                    package = pkgs.e2fsprogs;
+                  }
+                  {
+                    pattern = "btrfs";
+                    package = pkgs.btrfs-progs;
+                  }
+                  {
+                    pattern = "xfs";
+                    package = pkgs.xfsprogs;
+                  }
                 ];
-                packageFor = fs:
-                  map (rule: rule.package)
-                    (pkgs.lib.filter (rule: pkgs.lib.match rule.pattern fs != null) rules);
+                packageFor =
+                  fs: map (rule: rule.package) (pkgs.lib.filter (rule: pkgs.lib.match rule.pattern fs != null) rules);
               in
-                pkgs.lib.unique (pkgs.lib.concatMap packageFor (map (x: x.fsType) devices)));
+              pkgs.lib.unique (pkgs.lib.concatMap packageFor (map (x: x.fsType) devices))
+            );
         };
     };
 
     # add the filesystems
     fileSystems = lib.mkMerge (
-      map
-        (
-          dev:
-          lib.mkIf dev.enable {
-            "/${dev.name}" = {
-              inherit (dev) fsType device;
-              # it's either there, or it isn't !
-              options = [ "defaults" "x-systemd.device-timeout=10s" ];
-            };
-          }
-        ) devices
+      map (
+        dev:
+        lib.mkIf dev.enable {
+          "/${dev.name}" = {
+            inherit (dev) fsType device;
+            # it's either there, or it isn't !
+            options = [
+              "defaults"
+              "x-systemd.device-timeout=10s"
+            ];
+          };
+        }
+      ) devices
     );
 
     systemd.enableStrictShellChecks = true;
 
     # extra partitions :
     systemd.repart.partitions = lib.mkMerge (
-      map
-        (
-          dev:
-          lib.mkIf dev.enable {
-            "${dev.name}" = {
-              Format = dev.fsType;
-              Label = "${dev.name}";
-              Type = "${dev.name}";
-              Weight = dev.priority;
-            };
-          }
-        ) devices
+      map (
+        dev:
+        lib.mkIf dev.enable {
+          "${dev.name}" = {
+            Format = dev.fsType;
+            Label = "${dev.name}";
+            Type = "${dev.name}";
+            Weight = dev.priority;
+          };
+        }
+      ) devices
     );
   };
 }

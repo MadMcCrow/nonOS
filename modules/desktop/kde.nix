@@ -59,35 +59,34 @@ with (modConfig config);
     };
 
     # remove useless KDE packages
-    environment = {
-      plasma6.excludePackages =
-        # pkgs can be inside :
-        with pkgs.kdePackages; [
-          oxygen
-          khelpcenter
-          plasma-browser-integration
-          print-manager
-          kio-extras
-          kwallet
-          kwallet-pam
-          kate
-          okular
-        ];
+    environment.plasma6.excludePackages =
+      # pkgs can be inside :
+      with pkgs.kdePackages; [
+        oxygen
+        khelpcenter
+        plasma-browser-integration
+        print-manager
+        kio-extras
+        kwallet
+        kwallet-pam
+        kate
+        okular
+      ];
 
-      systemPackages =
-        with pkgs;
-        [
-          papirus-icon-theme
-          kdePackages.kcalc
-        ]
-        # TODO : enable custom themes and widgets
-        ++ lib.optionals false (
-          with nonpkgs;
-          [
-            plasma-vapor-theme
-            plasma-drawer
-          ]
-        );
-    };
+    environment.systemPackages =
+      with pkgs;
+      with nonpkgs;
+      [
+        papirus-icon-theme
+        kdePackages.kcalc
+      ]
+      ++ (lib.optional config.services.flatpak kdePackages.discover)
+      # TODO : enable custom themes and widgets
+      ++ (lib.optionals false [
+        plasma-vapor-theme
+        plasma-drawer
+      ]);
+    # should not be necessary
+    # xdg.portal.extraPortals = lib.optionals(config.services.flatpak.enable && config.xdg.portal.enable) with pkgs; [xdg-desktop-portal-kde xdg-desktop-portal-shana];
   };
 }
