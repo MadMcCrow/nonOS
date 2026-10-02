@@ -27,6 +27,7 @@ let
         # add our image module, as-is
         nonOS.nixosModules.image
         nonOS.nixosModules.debug
+        nonOS.nixosModules.desktop
         {
           # this may end up being a problem
           networking.hostName = lib.mkDefault "image";
@@ -37,10 +38,8 @@ let
             enable = true;
             repart.var.priority = 2000;
           };
-          debug.root.enable = true;
+            debug.root.enable = true;
           };
-          # make sure not to use grub
-          boot.loader.grub.enable = false;
         }
       ];
       specialArgs = {

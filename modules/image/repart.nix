@@ -14,6 +14,7 @@
   pkgs,
   ...
 }:
+with (modConfig config);
 let
   mkDevice =
     args:
@@ -32,8 +33,10 @@ let
     unsafeDiscardStringContext (
       replaceStrings [ "-" "/" ] [ "\\x2d" "-" ] "${removePrefix "/" disk}.device"
     );
+
+  # repart devices :
+  devices = map (x: (cfg.${x} // { name=x; })) ["home" "var"];
 in
-with (modConfig config);
 {
   options =
     let
@@ -108,15 +111,23 @@ with (modConfig config);
             ""
             "${lib.getExe repartRun}"
           ];
-          before = map (x: mkDeviceUnit cfg.${x}.device) [
-            "home"
-            "var"
-          ];
+          before = map (x: mkDeviceUnit x.device) devices;
           path = with pkgs; [
             repartRun
             util-linux
             coreutils
-          ];
+          ] ++ (
+            let
+                rules = [
+                  { pattern = "ext[234]"; package = pkgs.e2fsprogs; }
+                  { pattern = "btrfs";    package = pkgs.btrfs-progs; }
+                  { pattern = "xfs";      package = pkgs.xfsprogs; }
+                ];
+                packageFor = fs:
+                  map (rule: rule.package)
+                    (pkgs.lib.filter (rule: pkgs.lib.match rule.pattern fs != null) rules);
+              in
+                pkgs.lib.unique (pkgs.lib.concatMap packageFor (map (x: x.fsType) devices)));
         };
     };
 
@@ -124,19 +135,15 @@ with (modConfig config);
     fileSystems = lib.mkMerge (
       map
         (
-          name:
-          lib.mkIf cfg.${name}.enable {
-            "/${name}" = {
-              inherit (cfg.${name}) fsType device;
+          dev:
+          lib.mkIf dev.enable {
+            "/${dev.name}" = {
+              inherit (dev) fsType device;
               # it's either there, or it isn't !
               options = [ "defaults" "x-systemd.device-timeout=10s" ];
             };
           }
-        )
-        [
-          "home"
-          "var"
-        ]
+        ) devices
     );
 
     systemd.enableStrictShellChecks = true;
@@ -145,20 +152,16 @@ with (modConfig config);
     systemd.repart.partitions = lib.mkMerge (
       map
         (
-          name:
-          lib.mkIf cfg.${name}.enable {
-            "${name}" = {
-              Format = cfg.${name}.fsType;
-              Label = "${name}";
-              Type = "${name}";
-              Weight = cfg.${name}.priority;
+          dev:
+          lib.mkIf dev.enable {
+            "${dev.name}" = {
+              Format = dev.fsType;
+              Label = "${dev.name}";
+              Type = "${dev.name}";
+              Weight = dev.priority;
             };
           }
-        )
-        [
-          "home"
-          "var"
-        ]
+        ) devices
     );
   };
 }
