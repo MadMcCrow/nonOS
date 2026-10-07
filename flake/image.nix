@@ -82,7 +82,7 @@ let
        chmod +w "$DISK_IMAGE"
       ${lib.getExe qemu} \
         -smp 4 \
-        -m 2048 \
+        -m 4096 \
         --enable-kvm \
         -cpu host \
         -bios "${OVMF.fd}/FV/OVMF.fd" \

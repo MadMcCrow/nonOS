@@ -4,6 +4,7 @@
   modConfig,
   mkOptions,
   inputs,
+  self,
   ...
 }:
 {
@@ -15,12 +16,15 @@
 with (modConfig config);
 {
   # interface
-  options = mkOptions { };
+  options = mkOptions {
+    # not enabled by default
+    extras.enable = lib.mkEnableOption "extra KDE apps";
+  };
 
   # implementation
   config = mkIfEnable {
     # set tag for version
-    system.nixos.tags = [ "Desktop" ];
+    system.nixos.tags = [ "KDE" ];
 
     # enable KDE :
     services = {
@@ -58,9 +62,8 @@ with (modConfig config);
       partition-manager.enable = true;
     };
 
-    # remove useless KDE packages
-    environment.plasma6.excludePackages =
-      # pkgs can be inside :
+    # remove unecessary KDE packages (minimal kde experience)
+    environment.plasma6.excludePackages = lib.optionals cfg.extras.enable (
       with pkgs.kdePackages; [
         oxygen
         khelpcenter
@@ -71,16 +74,17 @@ with (modConfig config);
         kwallet-pam
         kate
         okular
-      ];
+        elisa
+      ]);
 
     environment.systemPackages =
       with pkgs;
-      with nonpkgs;
+      with self.packages.${pkgs.stdenv.hostPlatform.system};
       [
         papirus-icon-theme
         kdePackages.kcalc
       ]
-      ++ (lib.optional config.services.flatpak kdePackages.discover)
+      ++ (lib.optional config.services.flatpak.enable kdePackages.discover)
       # TODO : enable custom themes and widgets
       ++ (lib.optionals false [
         plasma-vapor-theme
