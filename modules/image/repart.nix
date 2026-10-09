@@ -39,6 +39,33 @@ let
     "home"
     "var"
   ];
+
+  repartRun = pkgs.writeShellScriptBin "repart-run" ''
+    set -euo pipefail
+    repart="${config.boot.initrd.systemd.package}/bin/systemd-repart"
+    store="$(readlink -f "${nix-store}")"
+    sysdisk="/dev/$(lsblk -ndo PKNAME "$store")"
+
+    echo "repart on $sysdisk"
+    "$repart" --definitions=/etc/repart.d --dry-run=no "$sysdisk"
+
+    data="${if cfg.dataDisk != null then cfg.dataDisk else ""}"
+    if [ -z "$data" ]; then
+      data="$(lsblk -bdnpo NAME,TYPE,RM,SIZE \
+        | awk -v s="$sysdisk" '$2=="disk" && $3==0 && $1!=s && $1!~/zram/ {print $4, $1}' \
+        | sort -rn | head -1 | cut -d' ' -f2)"
+    fi
+    [ -n "$data" ] || { echo "no data disk"; exit 0; }
+    data="$(readlink -f "$data")"
+
+    if lsblk -nro PARTLABEL "$data" | grep -qx nix-rw \
+       || [ -z "$(wipefs -n "$data")" ]; then
+      echo "repart on $data"
+      "$repart" --definitions=/etc/repart-data.d --empty=allow --dry-run=no "$data"
+    else
+      echo "foreign data on $data, skipping"
+    fi
+  '';
 in
 {
   options =
@@ -88,25 +115,16 @@ in
       # make sure that the script can run
       storePaths = with pkgs; [
         "${util-linux}/bin/lsblk"
+        "${util-linux}/bin/wipefs"
         "${coreutils}/bin/readlink" # uutils-coreutils is slightly larger
+        "${gawk}/bin/gawk"
       ];
 
       # no device : we override behaviour to "detect" the partitions ourselves
       repart.enable = true;
 
       # detect disk and run the actual repart
-      services.systemd-repart =
-        let
-          repartRun = pkgs.writeShellScriptBin "repart-run" ''
-            set -euo pipefail
-            dev="$(readlink -f "${nix-store}")"
-            disk="/dev/$(lsblk -ndo PKNAME "$dev")"
-            echo "repart on $disk"
-            exec ${config.boot.initrd.systemd.package}/bin/systemd-repart \
-              --definitions=/etc/repart.d --dry-run=no "$disk"
-          '';
-        in
-        {
+      services.systemd-repart = {
           # needed by repart
           after = [ (mkDeviceUnit nix-store) ];
           requires = [ (mkDeviceUnit nix-store) ];
@@ -121,6 +139,7 @@ in
               repartRun
               util-linux
               coreutils
+              gawk
             ]
             ++ (
               let
