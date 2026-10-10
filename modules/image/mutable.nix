@@ -16,13 +16,6 @@ with (modConfig config);
     # disabled by default
     enable = lib.mkEnableOption "configuration of the OS from mutable tools";
 
-    # where to store mutable config
-    storage.persistDir = lib.mkOption {
-      description = "where to keep the persistant config usually defined in /etc.";
-      type = lib.types.path;
-      default = "/var/persist/etc";
-    };
-
     remoteInterface = {
       enable = lib.mkEnableOption "remote management from Cockpit" // {
         default = true;
@@ -53,15 +46,5 @@ with (modConfig config);
 
     # this is necessary for mutability
     system.etc.overlay.enable = true;
-
-    # link all important files for users and hostname
-    systemd.tmpfiles.rules = [
-      "d ${cfg.storage.persistDir} 0750 root root - -"
-    ] ++ lib.flatten (map (x :
-      [
-      "f  ${cfg.storage.persistDir}/${x} 0750 root root - -"
-      "L+ /etc/${x} - - - - ${cfg.storage.persistDir}/${x}"
-    ]) [" hostname" "passwd" "group" "shadow"]);
-
   };
 }

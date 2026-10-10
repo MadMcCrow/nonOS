@@ -46,25 +46,26 @@ in
     (mkIfEnableAnd cfg.enable {
       fileSystems =
         let
-          mkMount = source: target:
-            {
-              "${target}" = {
-                device = "${source}";
-                fsType = "none";
-                options = [ "bind" ];
-              };
+          mkMount = source: target: {
+            "${target}" = {
+              device = "${source}";
+              fsType = "none";
+              options = [ "bind" ];
             };
+          };
         in
         lib.mkMerge (
           [
-          ( lib.optionalAttrs (cfg.storage.systemDir != null) (mkMount  cfg.storage.systemDir "/var/lib/flatpak") )
-          ] ++ ( lib.optionals (cfg.storage.userDir != null)
-              (
-                map (u: [
-                (mkMount "${cfg.storage.userDir}/${u.name}/appdata" "${u.home}/.var/app")
-                (mkMount "${cfg.storage.userDir}/${u.name}/appconfig" "${u.home}/.local/share/flatpak")
-              ]) users
+            (lib.optionalAttrs (cfg.storage.systemDir != null) (
+              mkMount cfg.storage.systemDir "/var/lib/flatpak"
             ))
+          ]
+          ++ (lib.optionals (cfg.storage.userDir != null) (
+            map (u: [
+              (mkMount "${cfg.storage.userDir}/${u.name}/appdata" "${u.home}/.var/app")
+              (mkMount "${cfg.storage.userDir}/${u.name}/appconfig" "${u.home}/.local/share/flatpak")
+            ]) users
+          ))
         );
 
       services.flatpak = {
