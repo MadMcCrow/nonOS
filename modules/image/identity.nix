@@ -1,7 +1,9 @@
+# identity.nix
+# who is this image, and which version
 {
   modConfig,
   mkOptions,
-  inputs,
+  meta,
   ...
 }:
 {
@@ -11,10 +13,10 @@
 }:
 with (modConfig config);
 {
-  # options = mkOptions { };
   config = mkIfEnable {
     system.image.id = "nonOS";
-    # make sure not to use grub
+    # bump on every release : sysupdate compares versions
+    system.image.version = lib.mkDefault meta.version;
     boot.loader.grub.enable = false;
   };
 }

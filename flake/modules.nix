@@ -31,17 +31,25 @@ let
           modConfig = config: rec {
             # expose the flake packages :
             ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
-            # expose the enable option
+
+            # expose the options :
+            # for the whole module
             mod = config.${meta.name}.${moduleName};
-            cfg = config.${meta.name}.${moduleName}.${submodule};
+            # or for this submodule specifically
+            cfg = mod.${submodule};
+
             # add config condition helper
             mkIfEnable = cAttr: lib.mkIf mod.enable cAttr;
             mkIfEnableAnd = cond: cAttr: lib.mkIf (mod.enable && cond) cAttr;
           };
-
           # set options with the correct path :
-          mkOptions = optAttr: {
-            ${meta.name}.${moduleName}.${submodule} = optAttr;
+          # for the whole module
+          mkModOptions = optAttr : {
+            ${meta.name}.${moduleName} = optAttr;
+          };
+          # for the submodule
+          mkOptions = optAttr: mkModOptions {
+            ${submodule} = optAttr;
           };
         };
     in

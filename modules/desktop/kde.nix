@@ -64,7 +64,8 @@ with (modConfig config);
 
     # remove unecessary KDE packages (minimal kde experience)
     environment.plasma6.excludePackages = lib.optionals cfg.extras.enable (
-      with pkgs.kdePackages; [
+      with pkgs.kdePackages;
+      [
         oxygen
         khelpcenter
         plasma-browser-integration
@@ -75,7 +76,8 @@ with (modConfig config);
         kate
         okular
         elisa
-      ]);
+      ]
+    );
 
     environment.systemPackages =
       with pkgs;
