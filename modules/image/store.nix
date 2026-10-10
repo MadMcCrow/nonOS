@@ -12,11 +12,7 @@
 }:
 with (modConfig config);
 let
-
-
-  inherit (mod) layout;
   inherit (config.system.image) version;
-  rwMount = "/nix/.rw-store";
 
   # empty dirs copied into nix-rw at creation
   skeleton = pkgs.runCommand "nix-rw-skeleton" { } ''
@@ -57,21 +53,19 @@ let
    # nix only runs if the writable store is mounted
    needsRw.unitConfig.ConditionPathIsMountPoint = rwMount;
 
-
 in
 {
   options = (with self.lib.options); mkOptions {
-    ro-label = mkStrOption  "store slot label for THIS version" "nix-store_${config.system.image.version}";
 
-    writable = {
-      # file inside the squashfs, read at first boot
-      registration = mkStrOption "nix DB registration file" ".nonos-registration";
-      #
-      device = mkPathOption "block device for the writable store" "/dev/disk/by-partlabel/${layout.labels.storeRw}";
-      #
+    # the store device
+    rw-store = {
+      label = mkStrOption "label name device for the writable store" "rw-store";
       fsType = mkFsOption "filesystem type for the writable store" "ext4";
     };
-  };
+
+    # file inside the squashfs, read at first boot
+    registration = mkStrOption "nix DB registration file" ".nonos-registration";
+    };
 
   config = mkIfEnable {
 
@@ -88,7 +82,7 @@ in
       nix.enable = true;
 
 
-    systemd.services = lib.mkIf cfg.writable.enable {
+    systemd.services = {
       # register ro-store paths in the persistent nix DB, once per version
       nix-load-db = {
         description = "register read-only store paths in the nix DB";

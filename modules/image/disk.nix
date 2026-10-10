@@ -98,9 +98,17 @@ in
     };
 
 
-    fileSystems."/boot" = {
-      device = "/dev/disk/by-partlabel/${cfg.esp.label}";
-      fsType = "vfat";
+    fileSystems = {
+      "/boot" = {
+        device = "/dev/disk/by-partlabel/${cfg.esp.label}";
+        fsType = "vfat";
+      };
+    # only the ro slot is static
+    "/nix/.ro-store" = {
+        device = "/dev/disk/by-partlabel/${cfg.slot.currentLabel}";
+        fsType = "squashfs";
+        options = [ "ro" ];
+        neededForBoot = true;
     };
 
     image.repart = {

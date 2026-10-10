@@ -1,0 +1,4 @@
+{...} :
+{
+    roMount = "/nix/.ro-store";
+}
