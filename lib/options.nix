@@ -14,6 +14,11 @@ rec {
           isString value
           && match "[0-9]+[KMGTP]?" value != null;
       };
+
+    fsType = let
+    supportedTypes = ["btrfs" "ext4" "ext2" "f2fs" "xfs"];s
+    in
+    (lib.types.enum supportedTypes) // { description = "filesystem type. currently supported are: ${lib.strings.join "," supportedTypes}."};
   };
 
   # path
@@ -22,14 +27,18 @@ rec {
   # str
   mkStrOption = mkTypedOption lib.types.str;
 
-  # our size type
-  mkSizeOption = mkTypedOption types.size;
-
   # bool that isn't enable
   mkBoolOption = mkTypedOption lib.types.bool;
 
   # network port type
+  mkIntOption = mkTypedOption lib.types.int;
+
+  # network port type
   mkPortOption = mkTypedOption lib.types.port;
 
+  # our size type
+  mkSizeOption = mkTypedOption types.size;
 
+  # our filesystem option
+  mkFsOption = mkTypedOption types.fsType;
 }
