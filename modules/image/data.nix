@@ -3,6 +3,7 @@
 {
   modConfig,
   mkOptions,
+  meta,
   self,
   ...
 }:
@@ -20,7 +21,7 @@ in
   options = with (self.lib.options); mkOptions {
     partitions = lib.mkOption {
       description = "auto detect and mount partitions at boot";
-      type = with lib.types; attrsetOf ( submodule {
+      type = with lib.types; attrsOf ( submodule {
         options = {
           label = mkStrOption "partition label for auto-mount" "";
           mountPoint = mkPathOption "where to auto-mount" "";
@@ -37,7 +38,7 @@ in
 
   # TODO :
   # if
-  config = mkIfEnableAnd cfg.enable {
+  config = mkIfEnable {
 
   };
 }

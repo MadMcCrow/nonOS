@@ -4,6 +4,7 @@ let
   mkTypedOption = type : description : default : lib.types.mkOption {
      inherit type description default;
   };
+in
 rec {
 
   types = {
@@ -16,9 +17,9 @@ rec {
       };
 
     fsType = let
-    supportedTypes = ["btrfs" "ext4" "ext2" "f2fs" "xfs"];s
+    supportedTypes = ["btrfs" "ext4" "ext2" "f2fs" "xfs"];
     in
-    (lib.types.enum supportedTypes) // { description = "filesystem type. currently supported are: ${lib.strings.join "," supportedTypes}."};
+    (lib.types.enum supportedTypes) // { description = "filesystem type. currently supported are: ${lib.strings.concatStringsSep "," supportedTypes}."};
   };
 
   # path
