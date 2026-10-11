@@ -17,6 +17,9 @@
 }:
 with (modConfig config);
 let
+# slot mount point :
+roStore = "/nix/.ro-store";
+
 # the currently activated slot store
 storeDevice = "/dev/disk/by-partlabel/${cfg.slot.currentLabel}";
 
@@ -78,9 +81,29 @@ in
         weight = mkIntOption "priority of var partition" 1500;
       };
 
+      root = {
+        size = mkSizeOption "root tmpfs size" "64M";
+      };
+
+
+
   };
 
   config = mkIfEnable {
+
+    # make sure everything is supported
+    boot.initrd.availableKernelModules = [
+      "nvme"
+      "ahci"
+      "sd_mod"
+      "xhci_pci"
+      "usb_storage"
+      "squashfs"
+      "overlay"
+      "btrfs"
+      "ext4"
+      "vfat"
+    ];
 
     boot.initrd.systemd = {
       repart.enable = true;
@@ -97,14 +120,27 @@ in
       };
     };
 
+    # make sure grub is disabled :
+    boot.loader.grub.enable = lib.mkForce false;
+
 
     fileSystems = {
+      # root is tmpfs
+      "/" = {
+        fsType = "tmpfs";
+        options = [
+          "mode=0755"
+          "size=${cfg.root.size}"
+        ];
+      };
+      # boot is a fat32 partition on the main disk
       "/boot" = {
         device = "/dev/disk/by-partlabel/${cfg.esp.label}";
         fsType = "vfat";
       };
+
     # only the ro slot is static
-    "/nix/.ro-store" = {
+    ${roStore} = {
         device = "/dev/disk/by-partlabel/${cfg.slot.currentLabel}";
         fsType = "squashfs";
         options = [ "ro" ];
@@ -143,7 +179,7 @@ in
           repartConfig = {
             Type = "linux-generic";
             Format = "squashfs";
-            Label = cfg.slot.storeRo;
+            Label = cfg.slot.currentLabel;
             # fixed size : the slot must also fit the next version;
             Minimize = "off";
             SizeMinBytes = cfg.slot.size;
@@ -178,5 +214,13 @@ in
         Weight = cfg.var.weight;
       };
     };
+
+    # option
+    system.image = {
+      id = meta.name;
+      # bump on every release : sysupdate compares versions
+      version = lib.mkDefault meta.version;
+    };
+
   };
 }

@@ -1,4 +1,0 @@
-{...} :
-{
-    roMount = "/nix/.ro-store";
-}
