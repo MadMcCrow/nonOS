@@ -16,35 +16,35 @@ with (modConfig config);
 let
   inherit (config.system.image) id version;
   inherit (config.system.boot.loader) ukiFile;
-
 in
 {
-  options = with (self.lib.options); mkOptions {
+  options =
+    with self.lib.options;
+    mkOptions {
+      # updates paths
+      paths = {
+        staging = mkPathOption "verifies update files" "/var/lib/fw-upload/staging";
+        incoming = mkPathOption "receives raw uploads" "/var/lib/fw-upload/incoming";
+      };
 
-    # updates paths
-    paths = {
-      staging = mkPathOption "verifies update files" "/var/lib/fw-upload/staging";
-      incoming = mkPathOption "receives raw uploads" "/var/lib/fw-upload/incoming";
-    };
+      target.disk = lib.mkOption {
+        description = ''
+          disk holding the store slots. "auto" may fail with a tmpfs root :
+          prefer /dev/disk/by-id/nvme-...
+        '';
+        default = "auto";
+        type = lib.types.str;
+      };
 
-    target.disk = lib.mkOption {
-      description = ''
-        disk holding the store slots. "auto" may fail with a tmpfs root :
-        prefer /dev/disk/by-id/nvme-...
-      '';
-      default = "auto";
-      type = lib.types.str;
-    };
+      autoReboot = mkBoolOption "reboot automatically after a successful update" true;
 
-    autoReboot = mkBoolOption "reboot automatically after a successful update" true;
+      markerFile = mkStrOption "file name that signals an upload batch is complete" ".ready";
 
-    markerFile = mkStrOption  "file name that signals an upload batch is complete" ".ready";
-
-    container = {
+      container = {
         name = mkStrOption "container name" "fw-upload";
         port = mkPortOption "fw-upload" 8888;
       };
-  };
+    };
 
   config = mkIfEnable {
     # what you upload : compressed store slot + UKI
@@ -101,7 +101,7 @@ in
 
     systemd.tmpfiles.rules = [
       "d ${cfg.paths.staging} 0750 root root -"
-     "d ${cfg.paths.incoming} 0750 root root -"
+      "d ${cfg.paths.incoming} 0750 root root -"
     ];
 
     containers."${cfg.container.name}" = {
@@ -122,40 +122,38 @@ in
         isReadOnly = false;
       };
 
-      config =
-        { pkgs, ... }:
-        {
-          nix.enable = false;
-          system.stateVersion = config.system.stateVersion;
-          networking.firewall.allowedTCPPorts = [ cfg.container.port ];
-          environment.systemPackages = [ pkgs.busybox ];
+      config = { pkgs, ... }: {
+        nix.enable = false;
+        system.stateVersion = config.system.stateVersion;
+        networking.firewall.allowedTCPPorts = [ cfg.container.port ];
+        environment.systemPackages = [ pkgs.busybox ];
 
-          environment.etc."httpd.conf".text = ''
-            H:/www
-            *.cgi:/bin/sh
+        environment.etc."httpd.conf".text = ''
+          H:/www
+          *.cgi:/bin/sh
+        '';
+        environment.etc."www/cgi-bin/upload.cgi" = {
+          mode = "0755";
+          text = ''
+            #!/bin/sh
+            name=$(printf '%s' "$QUERY_STRING" | sed -n 's/^name=//p' | tr -cd 'A-Za-z0-9._-')
+            if [ -z "$name" ]; then
+              printf 'Status: 400\r\n\r\nbad name\n'
+              exit 0
+            fi
+            cat > "/incoming/$name"
+            printf 'Status: 200\r\n\r\nok\n'
           '';
-          environment.etc."www/cgi-bin/upload.cgi" = {
-            mode = "0755";
-            text = ''
-              #!/bin/sh
-              name=$(printf '%s' "$QUERY_STRING" | sed -n 's/^name=//p' | tr -cd 'A-Za-z0-9._-')
-              if [ -z "$name" ]; then
-                printf 'Status: 400\r\n\r\nbad name\n'
-                exit 0
-              fi
-              cat > "/incoming/$name"
-              printf 'Status: 200\r\n\r\nok\n'
-            '';
-          };
-          systemd.services.httpd = {
-            description = "busybox uploader";
-            wantedBy = [ "multi-user.target" ];
-            serviceConfig = {
-              ExecStart = "${lib.getExe pkgs.busybox} httpd -f -v -p ${toString cfg.container.port} -h /www -c /etc/httpd.conf";
-              Restart = "on-failure";
-            };
+        };
+        systemd.services.httpd = {
+          description = "busybox uploader";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${lib.getExe pkgs.busybox} httpd -f -v -p ${toString cfg.container.port} -h /www -c /etc/httpd.conf";
+            Restart = "on-failure";
           };
         };
+      };
     };
 
     # batch complete : commit, apply, maybe reboot

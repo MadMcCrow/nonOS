@@ -1,7 +1,7 @@
 # helper functions for often used patterns in options
 {lib, ...} :
 let
-  mkTypedOption = type : description : default : lib.types.mkOption {
+  mkTypedOption = type : description : default : lib.mkOption {
      inherit type description default;
   };
 in

@@ -44,13 +44,15 @@ let
           };
           # set options with the correct path :
           # for the whole module
-          mkModOptions = optAttr : {
+          mkModOptions = optAttr: {
             ${meta.name}.${moduleName} = optAttr;
           };
           # for the submodule
-          mkOptions = optAttr: mkModOptions {
-            ${submodule} = optAttr;
-          };
+          mkOptions =
+            optAttr:
+            mkModOptions {
+              ${submodule} = optAttr;
+            };
         };
     in
     _: {
