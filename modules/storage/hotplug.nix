@@ -1,9 +1,8 @@
-# data.nix
+# hotplug.nix
 # Autodetect data partitions (home, ...) by GPT partition label.
 # Each entry becomes a fileSystems entry that:
-#   - never blocks boot (nofail)
-#   - gives up on a missing device quickly
-#   - is started again when the partition shows up (udev hotplug)
+#   - never blocks boot
+#   - is started again with udev hotplug
 {
   modConfig,
   mkOptions,
@@ -31,12 +30,7 @@ in
         partitions to auto-mount, keyed by GPT partition label.
         The label is matched against /dev/disk/by-partlabel/<name>.
       '';
-      default = {
-        "${meta.name}-home" = {
-          mountPoint = "/home";
-          fsType = "ext4";
-        };
-      };
+      default = { };
       example = lib.literalExpression ''
         {
           "nonOS-home" = { mountPoint = "/home"; fsType = "btrfs"; };
