@@ -24,7 +24,7 @@ let
   mountUnit = mountPoint: "${utils.escapeSystemdPath mountPoint}.mount";
 in
 {
-  options = (with self.)mkOptions {
+  options = opts.mkOptions {
     partitions = lib.mkOption {
       description = ''
         partitions to auto-mount, keyed by GPT partition label.
@@ -45,12 +45,12 @@ in
               example = "/home";
             };
             type = lib.mkOption {
-              description = "filesystem type for partition" ;
+              description = "filesystem type for partition";
               type = with opts.types; autoOr fsType;
               default = "auto";
             };
-            timeout =  lib.mkOption {
-              description = "timeout delay"
+            timeout = lib.mkOption {
+              description = "timeout delay";
               default = "100ms";
               type = opts.types.duration;
             };
@@ -67,10 +67,13 @@ in
 
   config = mkIfEnable {
     # make sure the kernel and tools support each filesystem used
-    boot.supportedFilesystems = with lib; with builtins;
-   let
-    types =  map (x: x.type) (attrValues (filterAttrs (_: v: v != "auto") cfg.partitions));
-  in lib.genAttrs types (_: true );
+    boot.supportedFilesystems =
+      with lib;
+      with builtins;
+      let
+        types = map (x: x.type) (attrValues (filterAttrs (_: v: v != "auto") cfg.partitions));
+      in
+      lib.genAttrs types (_: true);
 
     fileSystems = lib.mapAttrs' (
       label: p:
