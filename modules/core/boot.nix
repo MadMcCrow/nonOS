@@ -3,7 +3,7 @@
 # customization.nix
 # replace nixOS by nonOS in the various config files
 {
-  modConfig,
+  mkModule,
   mkOptions,
   inputs,
   ...
@@ -13,7 +13,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   imports = [ inputs.lanzaboote.nixosModules.lanzaboote ];
 

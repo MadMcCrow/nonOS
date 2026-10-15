@@ -1,7 +1,7 @@
 # update.nix
 # A/B updates with systemd-sysupdate, and the bundle to upload
 {
-  modConfig,
+  mkModule,
   mkOptions,
   self,
   ...
@@ -12,7 +12,7 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 let
   inherit (config.system.image) id version;
   inherit (config.system.boot.loader) ukiFile;

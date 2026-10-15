@@ -4,7 +4,7 @@
 # When the rw device appears, the overlay is mounted and nix-daemon starts.
 # When it disappears, everything is torn down in reverse order.
 {
-  modConfig,
+  mkModule,
   mkOptions,
   self,
   ...
@@ -16,15 +16,18 @@
   utils,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 let
   # constants. The ro slot is mounted here by image.nix : keep in sync.
   roMount = "/nix/.ro-store";
   storePath = "/nix/store";
   dbLink = "/nix/var/nix/db";
 
+  # the underlying device, autodetected by label
+  device = "/dev/disk/by-partlabel/${cfg.device.label}";
+
   # the .device unit systemd creates when udev reports the rw device
-  devUnit = "${utils.escapeSystemdPath cfg.rw.device}.device";
+  devUnit = "${utils.escapeSystemdPath device}.device";
 
   # mount and unmount logic, in one script :
   #   nix-store-rw up    -> mount rw device, then the overlay
@@ -32,7 +35,6 @@ let
   nix-store-rw =
     let
       sh = lib.escapeShellArg;
-      rwOptions = lib.concatStringsSep "," cfg.rw.options;
     in
     pkgs.writeShellApplication {
       name = "nix-store-rw";
@@ -48,10 +50,10 @@ let
         {
           RO = sh roMount;
           STORE = sh storePath;
-          RW = sh cfg.rw.mount;
-          RW_DEVICE = sh cfg.rw.device;
-          RW_FSTYPE = sh cfg.rw.fsType;
-          RW_OPTIONS = sh rwOptions;
+          RW = sh cfg.slot.mount;
+          RW_DEVICE = sh device;
+          RW_FSTYPE = sh cfg.device.fsType;
+          RW_OPTIONS = sh (lib.concatStringsSep "," cfg.device.options);
           BUSY_TIMEOUT = sh (toString cfg.busy.timeout);
           BUSY_FALLBACK = sh cfg.busy.fallback;
         };

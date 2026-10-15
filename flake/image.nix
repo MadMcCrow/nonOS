@@ -36,7 +36,6 @@ let
           nonOS = {
             image = {
               enable = true;
-              repart.var.priority = 2000;
             };
             debug.root.enable = true;
           };

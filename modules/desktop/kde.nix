@@ -1,7 +1,7 @@
 # kde.nix
 # enable the kde desktop
 {
-  modConfig,
+  mkModule,
   mkOptions,
   inputs,
   self,
@@ -13,7 +13,7 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   # interface
   options = mkOptions {

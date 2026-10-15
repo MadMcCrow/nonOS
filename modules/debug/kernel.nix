@@ -1,7 +1,7 @@
 # root.nix
 # Module to set the boot timemout for faster debug
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -10,7 +10,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   # just add this debug option
   config = mkIfEnable {

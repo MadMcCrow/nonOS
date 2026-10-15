@@ -4,7 +4,7 @@
 #   - never blocks boot
 #   - is started again with udev hotplug
 {
-  modConfig,
+  mkModule,
   mkOptions,
   meta,
   self,
@@ -16,7 +16,7 @@
   utils,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 let
   opts = self.lib.options;
 

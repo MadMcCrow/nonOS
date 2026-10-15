@@ -1,7 +1,7 @@
 # graphics.nix
 # define how nonOS handles GPUs (mostly AMD)
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -11,7 +11,7 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   options = mkOptions { amd.enable = lib.mkEnableOption "AMD Specific optimisations"; };
 

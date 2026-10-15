@@ -1,7 +1,7 @@
 # system.nix
 # replace nixOS by nonOS in the various system files
 {
-  modConfig,
+  mkModule,
   mkOptions,
   meta,
   ...
@@ -11,7 +11,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   # no options : we just use the general option
   # options = mkOptions { };

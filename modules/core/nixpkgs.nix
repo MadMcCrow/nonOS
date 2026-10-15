@@ -1,7 +1,7 @@
 # nixpkgs.nix
 # define how nonOS gets its nixpkgs
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -10,7 +10,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   options = mkOptions {
     # global option to allow unfree packages in other modules

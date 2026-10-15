@@ -1,7 +1,7 @@
 # mutable.nix
 # allow mutable config for the OS
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -10,7 +10,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   options = mkOptions {
     # disabled by default

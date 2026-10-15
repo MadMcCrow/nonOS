@@ -1,7 +1,7 @@
 # minimal.nix
 # optimize images sizes
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -10,7 +10,7 @@
   config,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   options = mkOptions {
     enable = lib.mkEnableOption "minimize storage usage by disabling useless derivations" // {
