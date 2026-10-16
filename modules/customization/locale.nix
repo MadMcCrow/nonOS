@@ -1,4 +1,3 @@
-
 # locale.nix
 # this is a French project
 {
@@ -16,5 +15,5 @@ with (mkModule config);
 {
   config = mkIfEnable {
     time.timeZone = "Europe/Paris";
- };
+  };
 }

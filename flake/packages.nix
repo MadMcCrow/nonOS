@@ -33,9 +33,10 @@ in
         # update pinned sources
         update =
           let
-            script = writeShellScriptBin "update-pins" ''
-                root=$(${git} rev-parse --show-toplevel)
-              ${npins} -d "$root/packages/_npins" update;
+            script = writeShellScriptBin "update-pins"
+            ''
+              root=$(${lib.getExe git} rev-parse --show-toplevel)
+              ${lib.getExe npins} -d "$root/packages/_npins" update;
             '';
           in
           {

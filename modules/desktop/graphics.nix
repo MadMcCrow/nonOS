@@ -14,16 +14,18 @@
 with (mkModule config);
 let
   # smaller firmware for amdgpu (do not include all of firmwares)
-  AMDFirmware = pkgs.runCommand "amd-firmware" {} ''
+  AMDFirmware = pkgs.runCommand "amd-firmware" { } ''
     mkdir -p $out/lib/firmware
     cp -r ${pkgs.linux-firmware}/lib/firmware/amdgpu $out/lib/firmware/
   '';
+  # shortcut
+  enableROCm = cfg.amd.enable && cfg.amd.rocm;
 in
 {
   options = mkOptions {
     amd = {
       enable = lib.mkEnableOption "AMD Specific optimisations";
-      rocm = lib.mkEnableOption "AMD ROCM GPGPU software";
+      rocm = lib.mkEnableOption "AMD ROCm GPGPU software";
     };
     openCL = lib.mkEnableOption "OpenCL support";
     support32bit = lib.mkEnableOption "32bit options";
@@ -34,7 +36,6 @@ in
     boot.initrd.kernelModules = lib.optional cfg.amd.enable "amdgpu";
 
     hardware = {
-
       enableAllFirmware = lib.mkDefault false;
       enableRedistributableFirmware = lib.mkDefault false;
       # https://wiki.nixos.org/wiki/AMD_GPU#Error:_amdgpu:_Failed_to_get_gpu_info_firmware
@@ -55,14 +56,15 @@ in
     };
 
     environment.systemPackages = lib.lists.flatten [
-      (lib.optional (cfg.amd.enable && cfg.amd.rocm) pkgs.lact)
-     (lib.optional cfg.openCL    pkgs.clinfo)
-      ];
+      (lib.optional enableROCm pkgs.lact)
+      (lib.optional cfg.openCL pkgs.clinfo)
+    ];
 
-    environment.variables = lib.mkIf cfg.amd.enable { AMD_VULKAN_ICD = "RADV"; # force use of radv
+    environment.variables = lib.mkIf cfg.amd.enable {
+      AMD_VULKAN_ICD = "RADV"; # force use of radv
     };
 
-    systemd = lib.mkIf (cfg.amd.enable && cfg.amd.rocm) {
+    systemd = lib.mkIf enableROCm {
       # enable rocm for amd gpus
       tmpfiles.rules =
         let
@@ -81,6 +83,6 @@ in
       services.lactd.wantedBy = [ "multi-user.target" ];
     };
     # enable rocm version of packages
-    nixpkgs.config.rocmSupport = cfg.amd.enable && cfg.amd.rocm;
+    nixpkgs.config.rocmSupport = lib.mkForce enableROCm;
   };
 }

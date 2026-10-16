@@ -22,7 +22,7 @@ let
         {
           nonOS = {
             desktop.graphics.amd.enable = true;
-            image.slot.size = "6G";
+            image.slot.size = "4G";
             image.filesystems = {
               "nonOS-home" = {
                 mountPoint = "/home";
