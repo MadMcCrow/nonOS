@@ -41,6 +41,10 @@ with (mkModule config);
       environment.defaultPackages = mkDefault [ ];
       documentation.info.enable = mkDefault false;
       documentation.nixos.enable = mkDefault false;
+
+      # avoid appending the whole nixpkgs sources to the closure
+      # saves around 300MB
+      nixpkgs.flake.setFlakeRegistry = mkForce false;
     }
   );
 }
