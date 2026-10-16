@@ -75,11 +75,7 @@ in
           '';
 
       # run an image inside qemu
-      runQemu =
-        {
-          pkgs,
-          image ? (mkSizedImage { }),
-        }:
+      runQemu = image :
         writeShellScriptBin "repart-image-qemu" ''
           set -euo pipefail
            DISK_IMAGE="demo-disk.raw"
@@ -97,14 +93,10 @@ in
             -display gtk
         '';
     in
-    {
-      packages = rec {
-        raw-image = mkImageSystem { inherit system; };
-        expanded-image = mkSizedImage { size = "10G"; };
-        run-image = runQemu {
-          inherit pkgs;
-          image = expanded-image;
-        };
+    lib.mkIf stdenv.isLinux {
+      packages = {
+        raw-image = (mkImageSystem { inherit system; }).config.system.build.image;
+        run-image = runQemu (mkSizedImage { size = "10G";});
       };
     };
 }
