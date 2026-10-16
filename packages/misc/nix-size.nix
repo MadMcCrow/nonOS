@@ -1,5 +1,6 @@
 # simple shell application to know the closure size of a package
 {
+  lib,
   writeShellApplication,
   nix,
   ...
