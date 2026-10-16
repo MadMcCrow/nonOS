@@ -1,4 +1,4 @@
-# hotplug.nix
+# partitions.nix
 # Autodetect data partitions (home, ...) by GPT partition label.
 # Each entry becomes a fileSystems entry that:
 #   - never blocks boot
@@ -24,8 +24,8 @@ let
   mountUnit = mountPoint: "${utils.escapeSystemdPath mountPoint}.mount";
 in
 {
-  options = opts.mkOptions {
-    partitions = lib.mkOption {
+  options = opts.mkOptions (
+    lib.mkOption {
       description = ''
         partitions to auto-mount, keyed by GPT partition label.
         The label is matched against /dev/disk/by-partlabel/<name>.
@@ -62,8 +62,8 @@ in
           };
         }
       );
-    };
-  };
+    }
+  );
 
   config = mkIfEnable {
     # make sure the kernel and tools support each filesystem used
@@ -71,7 +71,7 @@ in
       with lib;
       with builtins;
       let
-        types = map (x: x.type) (attrValues (filterAttrs (_: v: v != "auto") cfg.partitions));
+        types = map (x: x.type) (attrValues (filterAttrs (_: v: v != "auto") cfg));
       in
       lib.genAttrs types (_: true);
 
@@ -86,7 +86,7 @@ in
         ]
         ++ p.options;
       }
-    ) partitions;
+    ) cfg;
 
     # when the partition appears (boot or later), ask systemd to start its mount.
     # no udev settle : we react to the event instead of waiting for it.
@@ -94,7 +94,7 @@ in
       lib.mapAttrsToList (
         label: p:
         ''SUBSYSTEM=="block", ENV{ID_PART_ENTRY_NAME}=="${label}", TAG+="systemd", ENV{SYSTEMD_WANTS}+="${mountUnit p.mountPoint}"''
-      ) partitions
+      ) cfg
     );
   };
 }

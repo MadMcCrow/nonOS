@@ -15,21 +15,21 @@ let
     (inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
-        # add our image module, as-is
         nonOS.nixosModules.image
-        nonOS.nixosModules.debug
         nonOS.nixosModules.desktop
+        nonOS.nixosModules.audio
+        nonOS.nixosModules.customization
         {
           # this may end up being a problem
           networking.hostName = lib.mkDefault "image";
           system.stateVersion = lib.mkDefault "26.11";
           nixpkgs.hostPlatform = system;
           nonOS = {
-            image = {
-              slot.size = "3G"; # the default image size is 2.6G
-              enable = true;
+            desktop.graphics.amd.enable = true;
+            image.slot.size = "3G";
+            image.filesystems = {
+              "nonOS-home" = { mountPoint = "/home"; fsType = "btrfs"; };
             };
-            debug.root.enable = true;
           };
         }
       ];

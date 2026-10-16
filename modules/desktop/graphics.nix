@@ -29,8 +29,9 @@ with (mkModule config);
       graphics = {
         enable = true;
         enable32Bit = cfg.support32bit;
-        extraPackages = lib.mkForce [ ];
-        extraPackages32 = lib.mkForce [ ];
+        # can cause issue
+        # extraPackages = lib.mkForce [ ];
+        # extraPackages32 = lib.mkForce [ ];
       };
     };
 
