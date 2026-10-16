@@ -6,17 +6,8 @@
   ...
 }:
 let
-  # QEMU VM configuration
-  mkVM = _: {
-    imports = [ "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix" ];
-    config = {
-      virtualisation.memorySize = 4096;
-      virtualisation.cores = 4;
-    };
-  };
-
   # build an image
-  systemConfig =
+  mkImageSystem =
     {
       system ? "x86_64-linux",
       nonOS ? self,
@@ -35,6 +26,7 @@ let
           nixpkgs.hostPlatform = system;
           nonOS = {
             image = {
+              slot.size = "3G"; # the default image size is 2.6G
               enable = true;
             };
             debug.root.enable = true;
@@ -45,55 +37,11 @@ let
         inherit nonOS;
       };
     });
-
-  systemImage = args: (systemConfig args).config.system.build.image;
-
-  resizeImage =
-    {
-      pkgs,
-      image ? (systemImage { }),
-      size ? "10G",
-    }:
-    with pkgs;
-    runCommand "system-image-${size}"
-      {
-        nativeBuildInputs = [ qemu ];
-      }
-      ''
-        mkdir -p $out
-        cp ${image}/image.raw $out/image.raw
-        chmod +xw $out/image.raw
-        qemu-img resize $out/image.raw +${size}
-      '';
-
-  # run an image inside qemu
-  runQemu =
-    {
-      pkgs,
-      image ? (resizeImage { inherit pkgs; }),
-    }:
-    with pkgs;
-    writeShellScriptBin "repart-image-qemu" ''
-      set -euo pipefail
-       DISK_IMAGE="demo-disk.raw"
-       rm "$DISK_IMAGE" && true
-       cp ${image}/image.raw "$DISK_IMAGE"
-       chmod +w "$DISK_IMAGE"
-      ${lib.getExe qemu} \
-        -smp 4 \
-        -m 4096 \
-        --enable-kvm \
-        -cpu host \
-        -bios "${OVMF.fd}/FV/OVMF.fd" \
-        -drive file="$DISK_IMAGE",format=raw \
-        -serial stdio \
-        -display gtk
-    '';
-in
+  in
 {
   # expose our configuration
   flake.nixosConfigurations = {
-    demo = systemConfig { };
+    demo = mkImageSystem { };
   };
 
   perSystem =
@@ -103,13 +51,57 @@ in
       system,
       ...
     }:
+    with pkgs;
+    let
+    mkSizedImage =
+      {
+        extraArgs ? {},
+        size ? "10G"
+      }:
+      let
+        system = (mkImageSystem extraArgs);
+        image = system.config.system.build.image;
+        inherit (system.config.system.image) version;
+      in
+      runCommand "system-image-${size}"
+        {
+          nativeBuildInputs = [ qemu ];
+        }
+        ''
+          mkdir -p $out
+          cp ${image}/image_${version}.raw $out/image.raw
+          chmod +xw $out/image.raw
+          qemu-img resize $out/image.raw +${size}
+        '';
+
+    # run an image inside qemu
+    runQemu =
+      {
+        pkgs,
+        image ? (mkSizedImage {}),
+      }:
+      writeShellScriptBin "repart-image-qemu" ''
+        set -euo pipefail
+         DISK_IMAGE="demo-disk.raw"
+         rm "$DISK_IMAGE" && true
+         cp ${image}/image.raw "$DISK_IMAGE"
+         chmod +w "$DISK_IMAGE"
+        ${lib.getExe qemu} \
+          -smp 4 \
+          -m 4096 \
+          --enable-kvm \
+          -cpu host \
+          -bios "${OVMF.fd}/FV/OVMF.fd" \
+          -drive file="$DISK_IMAGE",format=raw \
+          -serial stdio \
+          -display gtk
+      '';
+
+    in
     {
       packages = rec {
-        raw-image = systemImage { inherit system; };
-        expanded-image = resizeImage {
-          inherit pkgs;
-          image = raw-image;
-        };
+        raw-image = mkImageSystem { inherit system; };
+        expanded-image = mkSizedImage { size = "10G"; };
         run-image = runQemu {
           inherit pkgs;
           image = expanded-image;

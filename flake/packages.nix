@@ -1,7 +1,7 @@
 # flake part module for dev shells
 # TODO : maybe get rid of the flake-part approach
 # RATIONAL : not all packages need to be supported for each platform
-{
+args@{
   inputs,
   self,
   ...
@@ -19,7 +19,7 @@ in
       ...
     }:
     let
-      allPackages = map (x: pkgs.callPackage x inputs) (inputs.import-tree.leaves (self + "/packages"));
+      allPackages = map (x: pkgs.callPackage x args) (inputs.import-tree.leaves (self + "/packages"));
       # supported is explicit
       isSupported = pkg: elem pkgs.stdenv.hostPlatform.system pkg.meta.platforms;
     in

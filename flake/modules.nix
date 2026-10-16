@@ -1,5 +1,5 @@
 # flake part module for exposing nixosModules
-{
+args@{
   self,
   inputs,
   ...
@@ -15,7 +15,7 @@ let
     modulePath:
     let
       moduleName = unsafeDiscardStringContext (lib.baseNameOf modulePath);
-      meta = import (self + "/lib/meta.nix") { inherit lib; };
+      meta = import (self + "/lib/meta.nix") args;
 
       moduleArgs =
         path:
