@@ -45,11 +45,11 @@ with (mkModule config);
       };
     };
 
-    fonts.packages = with pkgs; [
+    fonts.packages = lib.optionals cfg.theme.enable (with pkgs; [
       noto-fonts
       noto-fonts-lgc-plus
       jetbrains-mono
-    ];
+    ]);
 
     qt = {
       enable = true;
@@ -64,7 +64,7 @@ with (mkModule config);
     };
 
     # remove unecessary KDE packages (minimal kde experience)
-    environment.plasma6.excludePackages = lib.optionals cfg.extras.enable (
+    environment.plasma6.excludePackages = lib.optionals (!cfg.extras.enable) (
       with pkgs.kdePackages;
       [
         oxygen-icons
@@ -73,11 +73,13 @@ with (mkModule config);
         plasma-browser-integration
         print-manager
         kio-extras
+        kio-extras-kf5
         kwallet
         kwallet-pam
         kate
         okular
         elisa
+        akonadi
       ]
     );
 
