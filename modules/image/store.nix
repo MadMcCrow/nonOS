@@ -3,6 +3,7 @@
 # Without the rw device, /nix/store is the ro slot and nix-daemon is down.
 # When the rw device appears, the overlay is mounted and nix-daemon starts.
 # When it disappears, everything is torn down in reverse order.
+# With `enable = false`, only the ro slot is used : no overlay, no rw device.
 {
   mkModule,
   mkOptions,
@@ -223,7 +224,7 @@ in
   options =
     with self.lib.options;
     mkOptions {
-      daemon.enable = mkBoolOption "run nix-daemon only while the rw layer is mounted" true;
+      enable = mkBoolOption "enable functionnal nix-store (writable and usable)" true;
 
       db.path = mkPathOption "where the nix database is stored (symlinked from /nix/var/nix/db)" "/var/lib/nix-db";
 
@@ -256,75 +257,83 @@ in
       };
     };
 
-  config = mkIfEnable {
-    # make sure the kernel supports the rw filesystem
-    boot.supportedFilesystems = lib.mkIf (cfg.device.fsType != "auto") {
-      ${cfg.device.fsType} = true;
-    };
-
-    # base state : read-only store, no rw layer
-    fileSystems.${storePath} = {
-      device = roMount;
-      fsType = "none";
-      options = [
-        "bind"
-        "ro"
-      ];
-      neededForBoot = true;
-    };
-
-    # the db should be linked from persistent storage with a symlink
-    systemd.tmpfiles.rules = [
-      "d /nix/var/nix 0755 root root -"
-      "d ${cfg.db.path} 0755 root root -"
-      "L+ ${dbLink} - - - - ${cfg.db.path}"
-    ];
-
-    systemd.services = {
-      # mounts the rw device
-      # and overlay over /nix/store
-      nix-store-rw = {
-        description = "read-write nix store layer";
-        wantedBy = [ devUnit ];
-        bindsTo = [ devUnit ];
-        after = [ devUnit ];
-        wants = lib.optional cfg.daemon.enable "nix-daemon.socket";
-        unitConfig = {
-          RequiresMountsFor = [
-            roMount
-            storePath
-            cfg.db.path
+  config = mkIfEnable (
+    lib.mkMerge [
+      # always : read-only store, no rw layer
+      {
+        fileSystems.${storePath} = {
+          device = roMount;
+          fsType = "none";
+          options = [
+            "bind"
+            "ro"
           ];
-          # never give up retrying
-          StartLimitIntervalSec = 0;
+          neededForBoot = true;
         };
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          Restart = "on-failure";
-          RestartSec = cfg.errors.retryDelay;
-          # must outlast the busy retry loop (store, then rw)
-          TimeoutStopSec = cfg.errors.busy.timeout * 2 + 15;
+      }
+
+      # only with the rw layer
+      (lib.mkIf cfg.enable {
+        # make sure the kernel supports the rw filesystem
+        boot.supportedFilesystems = lib.mkIf (cfg.device.fsType != "auto") {
+          ${cfg.device.fsType} = true;
         };
-        script = "${lib.getExe nix-store-rw} up";
-        # runs on stop and on failed start
-        postStop = "${lib.getExe nix-store-rw} down";
-      };
 
-      # daemon lives and dies with the rw layer
-      nix-daemon = lib.mkIf cfg.daemon.enable {
-        bindsTo = [ "nix-store-rw.service" ];
-        after = [ "nix-store-rw.service" ];
-        wantedBy = lib.mkForce [ ];
-      };
-    };
+        # the db should be linked from persistent storage with a symlink
+        systemd.tmpfiles.rules = [
+          "d /nix/var/nix 0755 root root -"
+          "d ${cfg.db.path} 0755 root root -"
+          "L+ ${dbLink} - - - - ${cfg.db.path}"
+        ];
 
-    systemd.sockets.nix-daemon = lib.mkIf cfg.daemon.enable {
-      bindsTo = [ "nix-store-rw.service" ];
-      after = [ "nix-store-rw.service" ];
-      wantedBy = lib.mkForce [ ];
-    };
+        systemd.services = {
+          # mounts the rw device
+          # and overlay over /nix/store
+          nix-store-rw = {
+            description = "read-write nix store layer";
+            wantedBy = [ devUnit ];
+            bindsTo = [ devUnit ];
+            after = [ devUnit ];
+            # before = [ "nix-daemon.socket" ] # not necessary because set in the service bellow
+            wants = [ "nix-daemon.socket" ];
+            unitConfig = {
+              RequiresMountsFor = [
+                roMount
+                storePath
+                cfg.db.path
+              ];
+              # never give up retrying
+              StartLimitIntervalSec = 0;
+            };
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              Restart = "on-failure";
+              RestartSec = cfg.errors.retryDelay;
+              # must outlast the busy retry loop (store, then rw)
+              TimeoutStopSec = cfg.errors.busy.timeout * 2 + 15;
+            };
+            script = "${lib.getExe nix-store-rw} up";
+            # runs on stop and on failed start
+            postStop = "${lib.getExe nix-store-rw} down";
+          };
 
-    nix.enable = lib.mkIf cfg.daemon.enable (lib.mkForce true);
-  };
+          # daemon lives and dies with the rw layer
+          nix-daemon = {
+            bindsTo = [ "nix-store-rw.service" ];
+            after = [ "nix-store-rw.service" ];
+            wantedBy = lib.mkForce [ ];
+          };
+        };
+
+        systemd.sockets.nix-daemon = {
+          bindsTo = [ "nix-store-rw.service" ];
+          after = [ "nix-store-rw.service" ];
+          wantedBy = lib.mkForce [ ];
+        };
+
+        nix.enable = lib.mkForce true;
+      })
+    ]
+  );
 }
