@@ -3,7 +3,7 @@
   # types for options
   types = {
     # helper to allow "auto" or another type;
-    autoOr = type: types.either (types.enum [ "auto" ]) type;
+    autoOr = type: lib.types.either (lib.types.enum [ "auto" ]) type;
 
     # a size, as a string
     size = lib.types.mkOptionType {
