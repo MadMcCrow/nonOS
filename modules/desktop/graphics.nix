@@ -14,7 +14,11 @@
 with (mkModule config);
 {
   options = mkOptions {
-    amd.enable = lib.mkEnableOption "AMD Specific optimisations";
+    amd = {
+      enable = lib.mkEnableOption "AMD Specific optimisations";
+      rocm = lib.mkEnableOption "AMD ROCM GPGPU software";
+    };
+    openCL = lib.mkEnableOption "OpenCL support";
     support32bit = lib.mkEnableOption "32bit options";
   };
 
@@ -40,15 +44,15 @@ with (mkModule config);
       };
     };
 
-    environment = lib.mkIf cfg.amd.enable {
-      systemPackages = with pkgs; [
-        lact # Linux AMDGPU Controller
-        clinfo # to test opencl setup
+    environment.systemPackages = lib.lists.flatten [
+      (lib.optional (cfg.amd.enable && cfg.amd.rocm) pkgs.lact)
+     (lib.optional cfg.openCL    pkgs.clinfo)
       ];
-      variables.AMD_VULKAN_ICD = "RADV"; # force use of radv
+
+    environment.variables = lib.mkIf cfg.amd.enable { AMD_VULKAN_ICD = "RADV"; # force use of radv
     };
 
-    systemd = lib.mkIf cfg.amd.enable {
+    systemd = lib.mkIf (cfg.amd.enable && cfg.amd.rocm) {
       # enable rocm for amd gpus
       tmpfiles.rules =
         let
@@ -62,13 +66,11 @@ with (mkModule config);
           };
         in
         [ "L+    /opt/rocm   -    -    -     -    ${rocmEnv}" ];
-
       # enable lact daemon
       packages = with pkgs; [ lact ];
       services.lactd.wantedBy = [ "multi-user.target" ];
     };
-
-    # force enable rocm support if amd gpu is present
-    nixpkgs.config.rocmSupport = cfg.amd.enable;
+    # enable rocm version of packages
+    nixpkgs.config.rocmSupport = cfg.amd.enable && cfg.amd.rocm;
   };
 }

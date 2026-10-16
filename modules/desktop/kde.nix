@@ -64,6 +64,7 @@ with (mkModule config);
       dconf.enable = true;
       kdeconnect.enable = true;
       partition-manager.enable = true;
+      kde-pim.enable = cfg.extras.enable;
     };
 
     # remove unecessary KDE packages (minimal kde experience)
