@@ -20,11 +20,11 @@ with (mkModule config);
 let
   opts = self.lib.options;
 
-  # systemd unit name of the mount, e.g. "/home" -> "home.mount"
+  # systemd unit for mount point
   mountUnit = mountPoint: "${utils.escapeSystemdPath mountPoint}.mount";
 in
 {
-  options = opts.mkOptions (
+  options = mkOptions (
     lib.mkOption {
       description = ''
         partitions to auto-mount, keyed by GPT partition label.
@@ -44,7 +44,7 @@ in
               type = lib.types.path;
               example = "/home";
             };
-            type = lib.mkOption {
+            fsType = lib.mkOption {
               description = "filesystem type for partition";
               type = with opts.types; autoOr fsType;
               default = "auto";
@@ -71,7 +71,7 @@ in
       with lib;
       with builtins;
       let
-        types = map (x: x.type) (attrValues (filterAttrs (_: v: v != "auto") cfg));
+        types = map (x: x.fsType) (attrValues (filterAttrs (_: v: v != "auto") cfg));
       in
       lib.genAttrs types (_: true);
 
@@ -79,7 +79,7 @@ in
       label: p:
       lib.nameValuePair p.mountPoint {
         device = "/dev/disk/by-partlabel/${label}";
-        fsType = p.type;
+        inherit (p) fsType;
         options = [
           "nofail" # do not fail boot if missing
           "x-systemd.device-timeout=${p.timeout}" # do not wait long for it

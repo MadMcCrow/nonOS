@@ -20,10 +20,6 @@ let
         nonOS.nixosModules.audio
         nonOS.nixosModules.customization
         {
-          # this may end up being a problem
-          networking.hostName = lib.mkDefault "image";
-          system.stateVersion = lib.mkDefault "26.11";
-          nixpkgs.hostPlatform = system;
           nonOS = {
             desktop.graphics.amd.enable = true;
             image.slot.size = "3G";
