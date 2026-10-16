@@ -19,6 +19,7 @@ with (mkModule config);
   options = mkOptions {
     # not enabled by default
     extras.enable = lib.mkEnableOption "extra KDE apps";
+    theme.enable = lib.mkEnableOption "custom KDE theme";
   };
 
   # implementation
@@ -84,12 +85,12 @@ with (mkModule config);
       with pkgs;
       with self.packages.${pkgs.stdenv.hostPlatform.system};
       [
-        # papirus-icon-theme
         kdePackages.kcalc
       ]
       ++ (lib.optional config.services.flatpak.enable kdePackages.discover)
       # TODO : enable custom themes and widgets
-      ++ (lib.optionals false [
+      ++ (lib.optionals cfg.theme.enable [
+        papirus-icon-theme
         plasma-vapor-theme
         plasma-drawer
       ]);

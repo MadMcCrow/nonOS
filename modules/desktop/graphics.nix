@@ -13,7 +13,10 @@
 }:
 with (mkModule config);
 {
-  options = mkOptions { amd.enable = lib.mkEnableOption "AMD Specific optimisations"; };
+  options = mkOptions {
+    amd.enable = lib.mkEnableOption "AMD Specific optimisations";
+    support32bit = lib.mkEnableOption "32bit options";
+  };
 
   config = mkIfEnable {
     hardware = {
@@ -25,7 +28,9 @@ with (mkModule config);
       # enable graphics :
       graphics = {
         enable = true;
-        enable32Bit = true;
+        enable32Bit = cfg.support32bit;
+        extraPackages = lib.mkForce [ ];
+        extraPackages32 = lib.mkForce [ ];
       };
     };
 
