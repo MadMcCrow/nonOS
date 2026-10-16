@@ -66,6 +66,7 @@ with (mkModule config);
     environment.plasma6.excludePackages = lib.optionals cfg.extras.enable (
       with pkgs.kdePackages;
       [
+        oxygen-icons
         oxygen
         khelpcenter
         plasma-browser-integration
@@ -83,7 +84,7 @@ with (mkModule config);
       with pkgs;
       with self.packages.${pkgs.stdenv.hostPlatform.system};
       [
-        papirus-icon-theme
+        # papirus-icon-theme
         kdePackages.kcalc
       ]
       ++ (lib.optional config.services.flatpak.enable kdePackages.discover)

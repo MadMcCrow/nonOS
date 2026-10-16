@@ -1,5 +1,9 @@
 # the webpage to update the system :
-{ stdenvNoCC, ... }:
+{
+  lib,
+  stdenvNoCC,
+  ...
+}:
 stdenvNoCC.mkDerivation {
   pname = "webupdate";
   version = "0.1";
@@ -10,4 +14,5 @@ stdenvNoCC.mkDerivation {
     cp style.css $out/
     cp script.js $out/
   '';
+  meta.platforms = lib.platforms.linux;
 }

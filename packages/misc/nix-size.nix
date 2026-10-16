@@ -15,4 +15,5 @@ writeShellApplication {
     # make sure nix is flake and command ready :
     "NIX_CONFIG" = "experimental-features = nix-command flakes";
   };
+  meta.platforms = lib.platforms.all;
 }

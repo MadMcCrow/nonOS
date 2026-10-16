@@ -3,6 +3,7 @@
   stdenv,
   libsForQt5,
   zip,
+  kdePackages,
   ...
 }:
 let
@@ -24,5 +25,6 @@ stdenv.mkDerivation {
   meta = {
     description = "A fullscreen customizable launcher with application directories and krunner-like search for KDE Plasma";
     homepage = "https://api.github.com/${pin.repository.owner}/${pin.repository.repo}";
+    inherit (kdePackages.frameworkintegration.meta) platforms;
   };
 }
