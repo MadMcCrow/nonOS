@@ -19,7 +19,13 @@ with (mkModule config);
   };
 
   config = mkIfEnable {
+
+    # make sure amdgpu is supported from boot
+    boot.initrd.kernelModules = lib.optional cfg.amd.enable "amdgpu";
+
     hardware = {
+      # https://wiki.nixos.org/wiki/AMD_GPU#Error:_amdgpu:_Failed_to_get_gpu_info_firmware
+      firmware = lib.optional cfg.amd.enable pkgs.linux-firmware;
       # amd specific :
       amdgpu = lib.mkIf cfg.amd.enable {
         initrd.enable = true;
