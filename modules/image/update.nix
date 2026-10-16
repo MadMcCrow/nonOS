@@ -170,7 +170,7 @@ in
       ];
       script = ''
         set -euo pipefail
-        cd "${cfg.incomingDir}"
+        cd "${cfg.paths.incoming}"
         for f in *; do
           [ "$f" = "${cfg.markerFile}" ] && continue
           mv -f -- "$f" "${cfg.paths.staging}/$f"

@@ -219,9 +219,15 @@ in
   options =
     with self.lib.options;
     mkOptions {
-      device = {
+      # TODO : sort and regroup options
+      writable = {
         label = mkStrOption "label of partition holding the rw layer" "store-rw";
         mountPoint = mkPathOption "where the rw device is mounted" "/nix/.rw-store";
+
+        # TODO : Allow auto
+        fsType = mkFsOption "filesystem of the rw device" "btrfs";
+        options = mkTypedOption (with lib.types; listOf str) "extra mount options for the rw device" [ ];
+        # TODO : regroup with busy ( error management )
         retry.delay = mkIntOption "seconds before retrying a failed mount" 5;
         busy = {
           timeout = mkIntOption "seconds to retry unmounting a busy store before the fallback" 30;
@@ -240,14 +246,6 @@ in
         };
       };
       db.path = mkPathOption "where the nix database is stored (symlinked from /nix/var/nix/db)" "/var/lib/nix-db";
-
-      fsType = mkFsOption "filesystem of the rw device" "btrfs";
-      options = lib.mkOption {
-        description = "extra mount options for the rw device";
-        type = with lib.types; listOf str;
-        default = [ ];
-      };
-
       daemon.enable = mkBoolOption "run nix-daemon only while the rw layer is mounted" true;
     };
 
@@ -292,9 +290,9 @@ in
           Type = "oneshot";
           RemainAfterExit = true;
           Restart = "on-failure";
-          RestartSec = cfg.retry.delay;
+          RestartSec = cfg.device.retry.delay;
           # must outlast the busy retry loop
-          TimeoutStopSec = cfg.busy.timeout * 2 + 15;
+          TimeoutStopSec = cfg.device.busy.timeout * 2 + 15;
         };
         script = "${lib.getExe nix-store-rw} up";
         # runs on stop and on failed start
