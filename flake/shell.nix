@@ -24,6 +24,9 @@
       devShells = {
         # default is for common dev
         default = mkShellNoCC {
+          # make sure this shell will work for use
+          NIX_CONFIG = "experimental-features = nix-command flakes";
+
           packages = [
             deadnix
             nixfmt-tree

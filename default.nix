@@ -1,3 +1,5 @@
+# default.nix
+# make this flake compatible with non-flake users
 let
   lockFile = builtins.fromJSON (builtins.readFile ./flake.lock);
   flake-compat-node = lockFile.nodes.${lockFile.nodes.root.inputs.flake-compat};
