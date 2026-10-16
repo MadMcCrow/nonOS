@@ -32,205 +32,212 @@ let
   # mount and unmount logic, in one script :
   #   nix-store-rw up    -> mount rw device, then the overlay
   #   nix-store-rw down  -> unmount overlay, then rw device (busy-aware)
-  nix-store-rw =
-    let
-      sh = lib.escapeShellArg;
-    in
-    pkgs.writeShellApplication {
-      name = "nix-store-rw";
-      runtimeInputs = with pkgs; [
-        util-linux
-        coreutils
-        psmisc
-      ];
-      runtimeEnv =
-        let
-          sh = lib.escapeShellArg;
-        in
-        {
-          RO = sh roMount;
-          STORE = sh storePath;
-          RW = sh cfg.slot.mount;
-          RW_DEVICE = sh device;
-          RW_FSTYPE = sh cfg.device.fsType;
-          RW_OPTIONS = sh (lib.concatStringsSep "," cfg.device.options);
-          BUSY_TIMEOUT = sh (toString cfg.busy.timeout);
-          BUSY_FALLBACK = sh cfg.busy.fallback;
-        };
-      text = ''
-        lazy=0
-
-        die() {
-          echo "nix-store-rw: $*" >&2
-          exit 1
-        }
-
-        store_is_mounted() { mountpoint -q "$STORE"; }
-        rw_is_mounted() { mountpoint -q "$RW"; }
-
-        has_option() {
-          local opts=$1 expected=$2 item
-          local -a fields=()
-          IFS=, read -r -a fields <<< "$opts"
-
-          for item in "''${fields[@]}"; do
-            [[ "$item" == "$expected" ]] && return 0
-          done
-          return 1
-        }
-
-        overlay_matches() {
-          local fs opts
-
-          fs=$(findmnt -n -l -M "$STORE" -o FSTYPE) || return 1
-          [[ "$fs" == overlay ]] || return 1
-
-          opts=$(findmnt -n -l -M "$STORE" -o FS-OPTIONS) || return 1
-          has_option "$opts" "lowerdir=$RO" &&
-            has_option "$opts" "upperdir=$RW/upper" &&
-            has_option "$opts" "workdir=$RW/work"
-        }
-
-        rw_matches() {
-          local fs mounted_dev expected_dev
-
-          [[ -b "$RW_DEVICE" ]] || return 1
-
-          fs=$(findmnt -n -l -M "$RW" -o FSTYPE) || return 1
-          [[ "$fs" == "$RW_FSTYPE" ]] || return 1
-
-          mounted_dev=$(findmnt -n -l -M "$RW" -o MAJ:MIN) || return 1
-          expected_dev=$(lsblk -dnro MAJ:MIN "$RW_DEVICE") || return 1
-
-          [[ -n "$expected_dev" && "$mounted_dev" == "$expected_dev" ]]
-        }
-
-        release() {
-          local target=$1 check=$2 deadline=$((SECONDS + BUSY_TIMEOUT))
-
-          while "$check"; do
-            if (( lazy )); then
-              umount -l "$target" || die "lazy unmount failed: $target"
-              return
-            fi
-
-            if umount "$target" 2>/dev/null; then
-              continue
-            fi
-
-            if (( SECONDS < deadline )); then
-              sleep 1
-              continue
-            fi
-
-            fuser -vm "$target" >&2 || true
-
-            [[ "$BUSY_FALLBACK" == lazy ]] ||
-              die "$target still busy after $BUSY_TIMEOUT seconds"
-
-            echo "nix-store-rw: $target still busy; lazy detach" >&2
-            umount -l "$target" || die "lazy unmount failed: $target"
-            lazy=1
-            break
-          done
-        }
-
-        up() {
-          [[ -d "$RO" && -d "$STORE" ]] ||
-            die "lower directory or store mountpoint does not exist"
-          [[ -b "$RW_DEVICE" ]] ||
-            die "not a block device: $RW_DEVICE"
-
-          if store_is_mounted; then
-            overlay_matches ||
-              die "$STORE is mounted, but is not the expected overlay"
-          fi
-
-          if rw_is_mounted; then
-            rw_matches ||
-              die "$RW is mounted from an unexpected device or filesystem"
-          elif store_is_mounted; then
-            die "$STORE overlay exists, but its RW backing mount is absent"
-          fi
-
-          mkdir -p "$RW"
-
-          if ! rw_is_mounted; then
-            local opts=()
-            [[ -z "$RW_OPTIONS" ]] || opts=(-o "$RW_OPTIONS")
-
-            mount -t "$RW_FSTYPE" "''${opts[@]}" "$RW_DEVICE" "$RW" ||
-              die "failed to mount $RW_DEVICE at $RW"
-
-            rw_matches ||
-              die "RW mount does not match the expected device and filesystem"
-          fi
-
-          mkdir -p "$RW/upper" "$RW/work"
-
-          if ! store_is_mounted; then
-            mount -t overlay overlay \
-              -o "lowerdir=$RO,upperdir=$RW/upper,workdir=$RW/work" \
-              "$STORE" ||
-              die "failed to mount overlay at $STORE"
-          fi
-
-          overlay_matches ||
-            die "overlay mount does not match the expected configuration"
-        }
-
-        down() {
-          local store=0 rw=0
-
-          if store_is_mounted; then
-            overlay_matches ||
-              die "$STORE is mounted, but is not the expected overlay"
-            store=1
-          fi
-
-          if rw_is_mounted; then
-            rw_matches ||
-              die "$RW is mounted from an unexpected device or filesystem"
-            rw=1
-          fi
-
-          if [[ "$store" == 1 && "$rw" == 0 ]]; then
-            die "$STORE is mounted, but the expected RW filesystem is absent"
-          fi
-
-          if [[ "$store" == 1 ]]; then
-            release "$STORE" overlay_matches
-          fi
-
-          if [[ "$rw" == 1 ]]; then
-            release "$RW" rw_matches
-          fi
-        }
-
-        case "''${1:-}" in
-          up)   up ;;
-          down) down ;;
-          *)    echo "usage: nix-store-rw up|down" >&2; exit 2 ;;
-        esac
-      '';
+  nix-store-rw = pkgs.writeShellApplication {
+    name = "nix-store-rw";
+    runtimeInputs = with pkgs; [
+      util-linux
+      coreutils
+      psmisc
+    ];
+    # runtimeEnv is already shell-escaped by nixpkgs
+    runtimeEnv = {
+      RO = roMount;
+      STORE = storePath;
+      RW = cfg.device.mountPoint;
+      RW_DEVICE = device;
+      RW_FSTYPE = cfg.device.fsType;
+      RW_OPTIONS = lib.concatStringsSep "," cfg.device.options;
+      BUSY_TIMEOUT = toString cfg.errors.busy.timeout;
+      BUSY_FALLBACK = cfg.errors.busy.fallback;
     };
+    text = ''
+      lazy=0
+
+      die() {
+        echo "nix-store-rw: $*" >&2
+        exit 1
+      }
+
+      # the store is always a mountpoint (ro bind mount at boot).
+      # the overlay is stacked on top of it.
+      # -U : only look at the top-most mount.
+      overlay_mounted() {
+        local fs
+        fs=$(findmnt -n -l -U -M "$STORE" -o FSTYPE) || return 1
+        [[ "$fs" == overlay ]]
+      }
+
+      rw_is_mounted() { mountpoint -q "$RW"; }
+
+      has_option() {
+        local opts=$1 expected=$2 item
+        local -a fields=()
+        IFS=, read -r -a fields <<< "$opts"
+
+        for item in "''${fields[@]}"; do
+          [[ "$item" == "$expected" ]] && return 0
+        done
+        return 1
+      }
+
+      overlay_matches() {
+        local opts
+
+        overlay_mounted || return 1
+
+        opts=$(findmnt -n -l -U -M "$STORE" -o FS-OPTIONS) || return 1
+        has_option "$opts" "lowerdir=$RO" &&
+          has_option "$opts" "upperdir=$RW/upper" &&
+          has_option "$opts" "workdir=$RW/work"
+      }
+
+      rw_matches() {
+        local fs mounted_dev expected_dev
+
+        [[ -b "$RW_DEVICE" ]] || return 1
+
+        if [[ "$RW_FSTYPE" != auto ]]; then
+          fs=$(findmnt -n -l -U -M "$RW" -o FSTYPE) || return 1
+          [[ "$fs" == "$RW_FSTYPE" ]] || return 1
+        fi
+
+        mounted_dev=$(findmnt -n -l -U -M "$RW" -o MAJ:MIN) || return 1
+        expected_dev=$(lsblk -dnro MAJ:MIN "$RW_DEVICE") || return 1
+
+        [[ -n "$expected_dev" && "$mounted_dev" == "$expected_dev" ]]
+      }
+
+      release() {
+        local target=$1 check=$2 deadline=$((SECONDS + BUSY_TIMEOUT))
+
+        while "$check"; do
+          if (( lazy )); then
+            umount -l "$target" || die "lazy unmount failed: $target"
+            return
+          fi
+
+          if umount "$target" 2>/dev/null; then
+            continue
+          fi
+
+          if (( SECONDS < deadline )); then
+            sleep 1
+            continue
+          fi
+
+          fuser -vm "$target" >&2 || true
+
+          [[ "$BUSY_FALLBACK" == lazy ]] ||
+            die "$target still busy after $BUSY_TIMEOUT seconds"
+
+          echo "nix-store-rw: $target still busy; lazy detach" >&2
+          umount -l "$target" || die "lazy unmount failed: $target"
+          lazy=1
+          break
+        done
+      }
+
+      up() {
+        [[ -d "$RO" && -d "$STORE" ]] ||
+          die "lower directory or store mountpoint does not exist"
+        [[ -b "$RW_DEVICE" ]] ||
+          die "not a block device: $RW_DEVICE"
+
+        if overlay_mounted; then
+          overlay_matches ||
+            die "$STORE has an overlay, but not the expected one"
+        fi
+
+        if rw_is_mounted; then
+          rw_matches ||
+            die "$RW is mounted from an unexpected device or filesystem"
+        elif overlay_mounted; then
+          die "$STORE overlay exists, but its RW backing mount is absent"
+        fi
+
+        mkdir -p "$RW"
+
+        if ! rw_is_mounted; then
+          local opts=()
+          [[ "$RW_FSTYPE" == auto ]] || opts+=(-t "$RW_FSTYPE")
+          [[ -z "$RW_OPTIONS" ]] || opts+=(-o "$RW_OPTIONS")
+
+          mount "''${opts[@]}" "$RW_DEVICE" "$RW" ||
+            die "failed to mount $RW_DEVICE at $RW"
+
+          rw_matches ||
+            die "RW mount does not match the expected device and filesystem"
+        fi
+
+        mkdir -p "$RW/upper" "$RW/work"
+
+        if ! overlay_mounted; then
+          mount -t overlay overlay \
+            -o "lowerdir=$RO,upperdir=$RW/upper,workdir=$RW/work" \
+            "$STORE" ||
+            die "failed to mount overlay at $STORE"
+        fi
+
+        overlay_matches ||
+          die "overlay mount does not match the expected configuration"
+      }
+
+      down() {
+        local store=0 rw=0
+
+        if overlay_mounted; then
+          overlay_matches ||
+            die "$STORE has an overlay, but not the expected one"
+          store=1
+        fi
+
+        if rw_is_mounted; then
+          rw_matches ||
+            die "$RW is mounted from an unexpected device or filesystem"
+          rw=1
+        fi
+
+        if [[ "$store" == 1 && "$rw" == 0 ]]; then
+          die "$STORE overlay exists, but the expected RW filesystem is absent"
+        fi
+
+        if [[ "$store" == 1 ]]; then
+          release "$STORE" overlay_matches
+        fi
+
+        if [[ "$rw" == 1 ]]; then
+          release "$RW" rw_matches
+        fi
+      }
+
+      case "''${1:-}" in
+        up)   up ;;
+        down) down ;;
+        *)    echo "usage: nix-store-rw up|down" >&2; exit 2 ;;
+      esac
+    '';
+  };
 in
 {
+  # groups and options are sorted alphabetically
   options =
     with self.lib.options;
     mkOptions {
-      # TODO : sort and regroup options
-      writable = {
-        label = mkStrOption "label of partition holding the rw layer" "store-rw";
-        mountPoint = mkPathOption "where the rw device is mounted" "/nix/.rw-store";
+      daemon.enable = mkBoolOption "run nix-daemon only while the rw layer is mounted" true;
 
-        # TODO : Allow auto
-        fsType = mkFsOption "filesystem of the rw device" "btrfs";
+      db.path = mkPathOption "where the nix database is stored (symlinked from /nix/var/nix/db)" "/var/lib/nix-db";
+
+      # the device holding the rw layer
+      device = {
+        fsType = mkTypedOption (types.autoOr types.fsType) "filesystem of the rw device" "btrfs";
+        label = mkStrOption "partition label of the rw device" "store-rw";
+        mountPoint = mkPathOption "where the rw device is mounted" "/nix/.rw-store";
         options = mkTypedOption (with lib.types; listOf str) "extra mount options for the rw device" [ ];
-        # TODO : regroup with busy ( error management )
-        retry.delay = mkIntOption "seconds before retrying a failed mount" 5;
+      };
+
+      # everything about failures
+      errors = {
         busy = {
-          timeout = mkIntOption "seconds to retry unmounting a busy store before the fallback" 30;
           fallback =
             mkEnumOption
               ''
@@ -243,13 +250,18 @@ in
                 "fail"
               ]
               "lazy";
+          timeout = mkIntOption "seconds to retry unmounting a busy store before the fallback" 30;
         };
+        retryDelay = mkIntOption "seconds before retrying a failed mount" 5;
       };
-      db.path = mkPathOption "where the nix database is stored (symlinked from /nix/var/nix/db)" "/var/lib/nix-db";
-      daemon.enable = mkBoolOption "run nix-daemon only while the rw layer is mounted" true;
     };
 
   config = mkIfEnable {
+    # make sure the kernel supports the rw filesystem
+    boot.supportedFilesystems = lib.mkIf (cfg.device.fsType != "auto") {
+      ${cfg.device.fsType} = true;
+    };
+
     # base state : read-only store, no rw layer
     fileSystems.${storePath} = {
       device = roMount;
@@ -290,9 +302,9 @@ in
           Type = "oneshot";
           RemainAfterExit = true;
           Restart = "on-failure";
-          RestartSec = cfg.device.retry.delay;
-          # must outlast the busy retry loop
-          TimeoutStopSec = cfg.device.busy.timeout * 2 + 15;
+          RestartSec = cfg.errors.retryDelay;
+          # must outlast the busy retry loop (store, then rw)
+          TimeoutStopSec = cfg.errors.busy.timeout * 2 + 15;
         };
         script = "${lib.getExe nix-store-rw} up";
         # runs on stop and on failed start
