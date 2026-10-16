@@ -12,6 +12,13 @@
   ...
 }:
 with (mkModule config);
+let
+  # smaller firmware for amdgpu (do not include all of firmwares)
+  AMDFirmware = pkgs.runCommand "amd-firmware" {} ''
+    mkdir -p $out/lib/firmware
+    cp -r ${pkgs.linux-firmware}/lib/firmware/amdgpu $out/lib/firmware/
+  '';
+in
 {
   options = mkOptions {
     amd = {
@@ -27,8 +34,11 @@ with (mkModule config);
     boot.initrd.kernelModules = lib.optional cfg.amd.enable "amdgpu";
 
     hardware = {
+
+      enableAllFirmware = lib.mkDefault false;
+      enableRedistributableFirmware = lib.mkDefault false;
       # https://wiki.nixos.org/wiki/AMD_GPU#Error:_amdgpu:_Failed_to_get_gpu_info_firmware
-      firmware = lib.optional cfg.amd.enable pkgs.linux-firmware;
+      firmware = lib.optional cfg.amd.enable AMDFirmware;
       # amd specific :
       amdgpu = lib.mkIf cfg.amd.enable {
         initrd.enable = true;
