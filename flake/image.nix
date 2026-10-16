@@ -37,7 +37,7 @@ let
         inherit nonOS;
       };
     });
-  in
+in
 {
   # expose our configuration
   flake.nixosConfigurations = {
@@ -53,50 +53,49 @@ let
     }:
     with pkgs;
     let
-    mkSizedImage =
-      {
-        extraArgs ? {},
-        size ? "10G"
-      }:
-      let
-        system = (mkImageSystem extraArgs);
-        image = system.config.system.build.image;
-        inherit (system.config.system.image) version;
-      in
-      runCommand "system-image-${size}"
+      mkSizedImage =
         {
-          nativeBuildInputs = [ qemu ];
-        }
-        ''
-          mkdir -p $out
-          cp ${image}/image_${version}.raw $out/image.raw
-          chmod +xw $out/image.raw
-          qemu-img resize $out/image.raw +${size}
+          extraArgs ? { },
+          size ? "10G",
+        }:
+        let
+          system = mkImageSystem extraArgs;
+          image = system.config.system.build.image;
+          inherit (system.config.system.image) version;
+        in
+        runCommand "system-image-${size}"
+          {
+            nativeBuildInputs = [ qemu ];
+          }
+          ''
+            mkdir -p $out
+            cp ${image}/image_${version}.raw $out/image.raw
+            chmod +xw $out/image.raw
+            qemu-img resize $out/image.raw +${size}
+          '';
+
+      # run an image inside qemu
+      runQemu =
+        {
+          pkgs,
+          image ? (mkSizedImage { }),
+        }:
+        writeShellScriptBin "repart-image-qemu" ''
+          set -euo pipefail
+           DISK_IMAGE="demo-disk.raw"
+           rm "$DISK_IMAGE" && true
+           cp ${image}/image.raw "$DISK_IMAGE"
+           chmod +w "$DISK_IMAGE"
+          ${lib.getExe qemu} \
+            -smp 4 \
+            -m 4096 \
+            --enable-kvm \
+            -cpu host \
+            -bios "${OVMF.fd}/FV/OVMF.fd" \
+            -drive file="$DISK_IMAGE",format=raw \
+            -serial stdio \
+            -display gtk
         '';
-
-    # run an image inside qemu
-    runQemu =
-      {
-        pkgs,
-        image ? (mkSizedImage {}),
-      }:
-      writeShellScriptBin "repart-image-qemu" ''
-        set -euo pipefail
-         DISK_IMAGE="demo-disk.raw"
-         rm "$DISK_IMAGE" && true
-         cp ${image}/image.raw "$DISK_IMAGE"
-         chmod +w "$DISK_IMAGE"
-        ${lib.getExe qemu} \
-          -smp 4 \
-          -m 4096 \
-          --enable-kvm \
-          -cpu host \
-          -bios "${OVMF.fd}/FV/OVMF.fd" \
-          -drive file="$DISK_IMAGE",format=raw \
-          -serial stdio \
-          -display gtk
-      '';
-
     in
     {
       packages = rec {

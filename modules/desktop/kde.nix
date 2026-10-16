@@ -45,11 +45,14 @@ with (mkModule config);
       };
     };
 
-    fonts.packages = lib.optionals cfg.theme.enable (with pkgs; [
-      noto-fonts
-      noto-fonts-lgc-plus
-      jetbrains-mono
-    ]);
+    fonts.packages = lib.optionals cfg.theme.enable (
+      with pkgs;
+      [
+        noto-fonts
+        noto-fonts-lgc-plus
+        jetbrains-mono
+      ]
+    );
 
     qt = {
       enable = true;

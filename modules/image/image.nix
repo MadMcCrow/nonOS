@@ -58,15 +58,17 @@ let
       ]
     );
 
+  repartDependencies = [
+    config.boot.initrd.systemd.package
+    pkgs.util-linux
+    pkgs.coreutils
+  ]
+  ++ (fsTools cfg.var.fsType);
+
   # script to wrap the default systemd-repart to do it on the main disk
   systemd-repart-exe = pkgs.writeShellApplication {
     name = "repart-system";
-    runtimeInputs = [
-      config.boot.initrd.systemd.package
-      pkgs.util-linux
-      pkgs.coreutils
-    ]
-    ++ (fsTools cfg.var.fsType);
+    runtimeInputs = repartDependencies;
     text = ''
       sysdisk="/dev/$(lsblk -ndo PKNAME "$(readlink -f "${storeDevice}")")"
       echo "repart on $sysdisk"
@@ -123,7 +125,10 @@ in
     boot.initrd.systemd = {
       repart.enable = true;
       # keep tools reachable inside the initrd
-      storePaths = [ systemd-repart-exe ];
+      storePaths = [
+        systemd-repart-exe
+      ]
+      ++ repartDependencies;
       # override the default systemd-repart
       services.systemd-repart = {
         after = [ (mkDeviceUnit storeDevice) ];
