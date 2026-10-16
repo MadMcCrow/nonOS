@@ -1,8 +1,9 @@
-# mutable.nix
+# config.nix
 # allow mutable config for the OS
 {
   mkModule,
   mkOptions,
+  self,
   ...
 }:
 {
@@ -11,24 +12,16 @@
   ...
 }:
 with (mkModule config);
+with self.lib.options;
 {
   options = mkOptions {
-    # disabled by default
-    enable = lib.mkEnableOption "configuration of the OS from mutable tools";
-
     remoteInterface = {
-      enable = lib.mkEnableOption "remote management from Cockpit" // {
-        default = true;
-      };
-      port = lib.mkOption {
-        description = "port for the Cockpit webUI";
-        default = 457;
-        type = lib.types.port;
-        example = 4040;
-      };
+      enable = mkBoolOption "remote management from Cockpit" true;
+      port = mkPortOption "port for the Cockpit webUI" 457;
     };
   };
-  config = mkIfEnableAnd cfg.enable {
+
+  config = mkIfEnable {
     # dhcp or hostnamed
     networking = {
       hostName = lib.mkForce "";

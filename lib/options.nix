@@ -12,10 +12,11 @@
       check = value: with builtins; isString value && match "[0-9]+[KMGTP]?" value != null;
     };
 
+    # a systemd-style duration, as a string
     duration = lib.types.mkOptionType {
       name = "duration";
       description = "a duration (e.g. 10s, 10m, 200ms, 1h)";
-      check = value: with builtins; isString value && match "[0-9]+[(ms)msh]?" value != null;
+      check = value: with builtins; isString value && match "[0-9]+(us|ms|s|m|h|d|w)?" value != null;
     };
 
     fsType =
@@ -54,7 +55,13 @@
   mkIntOption = mkTypedOption lib.types.int;
 
   # network port type
-  mkPortOption = mkTypedOption lib.types.port;
+  mkPortOption =
+    description: default:
+    lib.mkOption {
+      type = lib.types.port;
+      inherit description default;
+      example = 4040;
+    };
 
   # our size type
   mkSizeOption = mkTypedOption types.size;

@@ -19,7 +19,6 @@ with (mkModule config);
   };
 
   config = mkIfEnable {
-
     # make sure amdgpu is supported from boot
     boot.initrd.kernelModules = lib.optional cfg.amd.enable "amdgpu";
 

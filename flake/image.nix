@@ -24,7 +24,10 @@ let
             desktop.graphics.amd.enable = true;
             image.slot.size = "3G";
             image.filesystems = {
-              "nonOS-home" = { mountPoint = "/home"; fsType = "btrfs"; };
+              "nonOS-home" = {
+                mountPoint = "/home";
+                fsType = "btrfs";
+              };
             };
           };
         }
