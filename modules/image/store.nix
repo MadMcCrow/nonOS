@@ -8,6 +8,7 @@
   mkModule,
   mkOptions,
   self,
+  meta,
   ...
 }:
 {
@@ -231,7 +232,7 @@ in
       # the device holding the rw layer
       device = {
         fsType = mkTypedOption (types.autoOr types.fsType) "filesystem of the rw device" "btrfs";
-        label = mkStrOption "partition label of the rw device" "store-rw";
+        label = mkStrOption "partition label of the rw device" "${meta.name}-store-rw";
         mountPoint = mkPathOption "where the rw device is mounted" "/nix/.rw-store";
         options = mkTypedOption (with lib.types; listOf str) "extra mount options for the rw device" [ ];
       };

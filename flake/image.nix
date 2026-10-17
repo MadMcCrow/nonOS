@@ -18,15 +18,17 @@ let
         nonOS.nixosModules.image
         nonOS.nixosModules.desktop
         nonOS.nixosModules.audio
+        nonOS.nixosModules.storage
         nonOS.nixosModules.customization
         {
           nonOS = {
+            storage.zfs.enable = true;
             desktop.graphics.amd.enable = true;
             image.slot.size = "4G";
-            image.filesystems = {
+            storage.automount = {
               "nonOS-home" = {
                 mountPoint = "/home";
-                fsType = "btrfs";
+                fsType = "auto";
               };
             };
           };

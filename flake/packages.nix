@@ -21,7 +21,7 @@ in
     let
       allPackages = map (x: pkgs.callPackage x args) (inputs.import-tree.leaves (self + "/packages"));
       # supported is explicit
-      isSupported = pkg: elem pkgs.stdenv.hostPlatform.system pkg.meta.platforms;
+      isSupported = pkg: pkgs.lib.meta.availableOn system pkg;
     in
     {
       # import everything in the `packages` folder, based on its path
@@ -33,8 +33,7 @@ in
         # update pinned sources
         update =
           let
-            script = writeShellScriptBin "update-pins"
-            ''
+            script = writeShellScriptBin "update-pins" ''
               root=$(${lib.getExe git} rev-parse --show-toplevel)
               ${lib.getExe npins} -d "$root/packages/_npins" update;
             '';

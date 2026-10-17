@@ -1,4 +1,4 @@
-# partitions.nix
+# automount.nix
 # Autodetect data partitions (home, ...) by GPT partition label.
 # Each entry becomes a fileSystems entry that:
 #   - never blocks boot
@@ -19,7 +19,6 @@
 with (mkModule config);
 let
   opts = self.lib.options;
-
   # systemd unit for mount point
   mountUnit = mountPoint: "${utils.escapeSystemdPath mountPoint}.mount";
 in
