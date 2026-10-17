@@ -10,20 +10,24 @@
 {
   lib,
   config,
-  utils,
+  pkgs,
   ...
 }:
 with (mkModule config);
 with self.lib.options;
 let
-  # all zfs compatible kernels
+  # same logic as srvOS
+  # https://github.com/nix-community/srvos/blob/2fa72cea3d3d15b104f3c69de18316ef575bc837/nixos/mixins/latest-zfs-kernel.nix
+  isUnstable = config.boot.zfs.package == pkgs.zfs_unstable;
   zfsCompatibleKernelPackages = lib.filterAttrs (
     name: kernelPackages:
-    (builtins.tryEval kernelPackages).success
-    && (!kernelPackages.${config.boot.zfs.package.kernelModuleAttribute}.meta.broken)
+    (builtins.match "linux_[0-9]+_[0-9]+" name) != null
+    && (builtins.tryEval kernelPackages).success
+    && (
+      (!isUnstable && !kernelPackages.zfs.meta.broken)
+      || (isUnstable && !kernelPackages.zfs_unstable.meta.broken)
+    )
   ) pkgs.linuxKernel.packages;
-
-  # most recent one
   latestKernelPackage = lib.last (
     lib.sort (a: b: (lib.versionOlder a.kernel.version b.kernel.version)) (
       builtins.attrValues zfsCompatibleKernelPackages
