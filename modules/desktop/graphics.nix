@@ -1,7 +1,7 @@
 # graphics.nix
 # define how nonOS handles GPUs (mostly AMD)
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -11,12 +11,35 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
+let
+  # smaller firmware for amdgpu (do not include all of firmwares)
+  AMDFirmware = pkgs.runCommand "amd-firmware" { } ''
+    mkdir -p $out/lib/firmware
+    cp -r ${pkgs.linux-firmware}/lib/firmware/amdgpu $out/lib/firmware/
+  '';
+  # shortcut
+  enableROCm = cfg.amd.enable && cfg.amd.rocm;
+in
 {
-  options = mkOptions { amd.enable = lib.mkEnableOption "AMD Specific optimisations"; };
+  options = mkOptions {
+    amd = {
+      enable = lib.mkEnableOption "AMD Specific optimisations";
+      rocm = lib.mkEnableOption "AMD ROCm GPGPU software";
+    };
+    openCL = lib.mkEnableOption "OpenCL support";
+    support32bit = lib.mkEnableOption "32bit options";
+  };
 
   config = mkIfEnable {
+    # make sure amdgpu is supported from boot
+    boot.initrd.kernelModules = lib.optional cfg.amd.enable "amdgpu";
+
     hardware = {
+      enableAllFirmware = lib.mkDefault false;
+      enableRedistributableFirmware = lib.mkDefault false;
+      # https://wiki.nixos.org/wiki/AMD_GPU#Error:_amdgpu:_Failed_to_get_gpu_info_firmware
+      firmware = lib.optional cfg.amd.enable AMDFirmware;
       # amd specific :
       amdgpu = lib.mkIf cfg.amd.enable {
         initrd.enable = true;
@@ -25,19 +48,23 @@ with (modConfig config);
       # enable graphics :
       graphics = {
         enable = true;
-        enable32Bit = true;
+        enable32Bit = cfg.support32bit;
+        # can cause issue
+        # extraPackages = lib.mkForce [ ];
+        # extraPackages32 = lib.mkForce [ ];
       };
     };
 
-    environment = lib.mkIf cfg.amd.enable {
-      systemPackages = with pkgs; [
-        lact # Linux AMDGPU Controller
-        clinfo # to test opencl setup
-      ];
-      variables.AMD_VULKAN_ICD = "RADV"; # force use of radv
+    environment.systemPackages = lib.lists.flatten [
+      (lib.optional enableROCm pkgs.lact)
+      (lib.optional cfg.openCL pkgs.clinfo)
+    ];
+
+    environment.variables = lib.mkIf cfg.amd.enable {
+      AMD_VULKAN_ICD = "RADV"; # force use of radv
     };
 
-    systemd = lib.mkIf cfg.amd.enable {
+    systemd = lib.mkIf enableROCm {
       # enable rocm for amd gpus
       tmpfiles.rules =
         let
@@ -51,13 +78,11 @@ with (modConfig config);
           };
         in
         [ "L+    /opt/rocm   -    -    -     -    ${rocmEnv}" ];
-
       # enable lact daemon
       packages = with pkgs; [ lact ];
       services.lactd.wantedBy = [ "multi-user.target" ];
     };
-
-    # force enable rocm support if amd gpu is present
-    nixpkgs.config.rocmSupport = cfg.amd.enable;
+    # enable rocm version of packages
+    nixpkgs.config.rocmSupport = lib.mkForce enableROCm;
   };
 }

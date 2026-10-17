@@ -1,7 +1,7 @@
 # system.nix
 # define the update process in NonOS
 {
-  modConfig,
+  mkModule,
   inputs,
   ...
 }:
@@ -11,7 +11,7 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   imports = [
     "${inputs.nixpkgs}/nixos/modules/profiles/minimal.nix"

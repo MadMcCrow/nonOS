@@ -1,7 +1,7 @@
 # kde.nix
 # enable the kde desktop
 {
-  modConfig,
+  mkModule,
   mkOptions,
   inputs,
   self,
@@ -13,12 +13,13 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   # interface
   options = mkOptions {
     # not enabled by default
     extras.enable = lib.mkEnableOption "extra KDE apps";
+    theme.enable = lib.mkEnableOption "custom KDE theme";
   };
 
   # implementation
@@ -44,11 +45,14 @@ with (modConfig config);
       };
     };
 
-    fonts.packages = with pkgs; [
-      noto-fonts
-      noto-fonts-lgc-plus
-      jetbrains-mono
-    ];
+    fonts.packages = lib.optionals cfg.theme.enable (
+      with pkgs;
+      [
+        noto-fonts
+        noto-fonts-lgc-plus
+        jetbrains-mono
+      ]
+    );
 
     qt = {
       enable = true;
@@ -60,22 +64,26 @@ with (modConfig config);
       dconf.enable = true;
       kdeconnect.enable = true;
       partition-manager.enable = true;
+      kde-pim.enable = cfg.extras.enable;
     };
 
     # remove unecessary KDE packages (minimal kde experience)
-    environment.plasma6.excludePackages = lib.optionals cfg.extras.enable (
+    environment.plasma6.excludePackages = lib.optionals (!cfg.extras.enable) (
       with pkgs.kdePackages;
       [
+        oxygen-icons
         oxygen
         khelpcenter
         plasma-browser-integration
         print-manager
         kio-extras
+        kio-extras-kf5
         kwallet
         kwallet-pam
         kate
         okular
         elisa
+        akonadi
       ]
     );
 
@@ -83,12 +91,12 @@ with (modConfig config);
       with pkgs;
       with self.packages.${pkgs.stdenv.hostPlatform.system};
       [
-        papirus-icon-theme
         kdePackages.kcalc
       ]
       ++ (lib.optional config.services.flatpak.enable kdePackages.discover)
       # TODO : enable custom themes and widgets
-      ++ (lib.optionals false [
+      ++ (lib.optionals cfg.theme.enable [
+        papirus-icon-theme
         plasma-vapor-theme
         plasma-drawer
       ]);

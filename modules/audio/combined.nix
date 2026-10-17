@@ -1,7 +1,7 @@
 # combined.nix
 # create a pipewire output that sends audio to all devices
 {
-  modConfig,
+  mkModule,
   mkOptions,
   ...
 }:
@@ -11,7 +11,7 @@
   lib,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 {
   options = mkOptions {
     combinedOutput = {

@@ -1,5 +1,5 @@
 # flake part module for exposing nixosModules
-{
+args@{
   self,
   inputs,
   ...
@@ -15,12 +15,17 @@ let
     modulePath:
     let
       moduleName = unsafeDiscardStringContext (lib.baseNameOf modulePath);
-      meta = import (self + "/lib/meta.nix") { inherit lib; };
+      meta = import (self + "/lib/meta.nix") args;
 
       moduleArgs =
         path:
         let
-          submodule = unsafeDiscardStringContext (lib.removeSuffix ".nix" (lib.baseNameOf path));
+          curr = unsafeDiscardStringContext (lib.removeSuffix ".nix" (lib.baseNameOf path));
+          subModPath = [
+            meta.name
+            moduleName
+          ]
+          ++ (lib.optional (curr != moduleName) curr);
         in
         {
           # provide values and shortcuts
@@ -28,21 +33,26 @@ let
           inherit (meta) name;
           mkPrio = lib.mkOverride 990; # mkDefault but higher priority
 
-          modConfig = config: rec {
-            # expose the flake packages :
-            ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
-            # expose the enable option
-            mod = config.${meta.name}.${moduleName};
-            cfg = config.${meta.name}.${moduleName}.${submodule};
-            # add config condition helper
-            mkIfEnable = cAttr: lib.mkIf mod.enable cAttr;
-            mkIfEnableAnd = cond: cAttr: lib.mkIf (mod.enable && cond) cAttr;
-          };
+          # helper for building modules
+          mkModule =
+            config:
+            let
+              mod = config.${meta.name}.${moduleName};
+              cfg = lib.attrByPath subModPath { } config;
+            in
+            {
+              # expose the flake packages :
+              ospkgs = self.packages.${config.nixpkgs.hostPlatform.system};
 
-          # set options with the correct path :
-          mkOptions = optAttr: {
-            ${meta.name}.${moduleName}.${submodule} = optAttr;
-          };
+              # expose the module configuration :
+              inherit mod cfg;
+
+              # add config condition helper
+              mkIfEnable = cAttr: lib.mkIf mod.enable cAttr;
+              mkIfEnableAnd = cond: cAttr: lib.mkIf (mod.enable && cond) cAttr;
+            };
+          # helper for options
+          mkOptions = optAttr: lib.setAttrByPath subModPath optAttr;
         };
     in
     _: {

@@ -6,17 +6,8 @@
   ...
 }:
 let
-  # QEMU VM configuration
-  mkVM = _: {
-    imports = [ "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix" ];
-    config = {
-      virtualisation.memorySize = 4096;
-      virtualisation.cores = 4;
-    };
-  };
-
   # build an image
-  systemConfig =
+  mkImageSystem =
     {
       system ? "x86_64-linux",
       nonOS ? self,
@@ -24,21 +15,22 @@ let
     (inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
-        # add our image module, as-is
         nonOS.nixosModules.image
-        nonOS.nixosModules.debug
         nonOS.nixosModules.desktop
+        nonOS.nixosModules.audio
+        nonOS.nixosModules.storage
+        nonOS.nixosModules.customization
         {
-          # this may end up being a problem
-          networking.hostName = lib.mkDefault "image";
-          system.stateVersion = lib.mkDefault "26.11";
-          nixpkgs.hostPlatform = system;
           nonOS = {
-            image = {
-              enable = true;
-              repart.var.priority = 2000;
+            storage.zfs.enable = true;
+            desktop.graphics.amd.enable = true;
+            image.slot.size = "4G";
+            storage.automount = {
+              "nonOS-home" = {
+                mountPoint = "/home";
+                fsType = "auto";
+              };
             };
-            debug.root.enable = true;
           };
         }
       ];
@@ -46,55 +38,11 @@ let
         inherit nonOS;
       };
     });
-
-  systemImage = args: (systemConfig args).config.system.build.image;
-
-  resizeImage =
-    {
-      pkgs,
-      image ? (systemImage { }),
-      size ? "10G",
-    }:
-    with pkgs;
-    runCommand "system-image-${size}"
-      {
-        nativeBuildInputs = [ qemu ];
-      }
-      ''
-        mkdir -p $out
-        cp ${image}/image.raw $out/image.raw
-        chmod +xw $out/image.raw
-        qemu-img resize $out/image.raw +${size}
-      '';
-
-  # run an image inside qemu
-  runQemu =
-    {
-      pkgs,
-      image ? (resizeImage { inherit pkgs; }),
-    }:
-    with pkgs;
-    writeShellScriptBin "repart-image-qemu" ''
-      set -euo pipefail
-       DISK_IMAGE="demo-disk.raw"
-       rm "$DISK_IMAGE" && true
-       cp ${image}/image.raw "$DISK_IMAGE"
-       chmod +w "$DISK_IMAGE"
-      ${lib.getExe qemu} \
-        -smp 4 \
-        -m 2048 \
-        --enable-kvm \
-        -cpu host \
-        -bios "${OVMF.fd}/FV/OVMF.fd" \
-        -drive file="$DISK_IMAGE",format=raw \
-        -serial stdio \
-        -display gtk
-    '';
 in
 {
   # expose our configuration
   flake.nixosConfigurations = {
-    demo = systemConfig { };
+    demo = mkImageSystem { };
   };
 
   perSystem =
@@ -104,17 +52,92 @@ in
       system,
       ...
     }:
-    {
-      packages = rec {
-        raw-image = systemImage { inherit system; };
-        expanded-image = resizeImage {
-          inherit pkgs;
-          image = raw-image;
+    with pkgs;
+    let
+      mkSizedImage =
+        {
+          extraArgs ? { },
+          size ? "10G",
+        }:
+        let
+          system = mkImageSystem extraArgs;
+          image = system.config.system.build.image;
+          inherit (system.config.system.image) version;
+        in
+        runCommand "system-image-${size}"
+          {
+            nativeBuildInputs = [ qemu ];
+          }
+          ''
+            mkdir -p $out
+            cp ${image}/image_${version}.raw $out/image.raw
+            chmod +xw $out/image.raw
+            qemu-img resize $out/image.raw +${size}
+          '';
+
+      # run an image inside qemu
+      runQemu =
+        image:
+        writeShellScriptBin "repart-image-qemu" ''
+          set -euo pipefail
+           DISK_IMAGE="demo-disk.raw"
+           rm "$DISK_IMAGE" && true
+           cp ${image}/image.raw "$DISK_IMAGE"
+           chmod +w "$DISK_IMAGE"
+          ${lib.getExe qemu} \
+            -smp 4 \
+            -m 4096 \
+            --enable-kvm \
+            -cpu host \
+            -bios "${OVMF.fd}/FV/OVMF.fd" \
+            -drive file="$DISK_IMAGE",format=raw \
+            -serial stdio \
+            -display gtk
+        '';
+
+      # install image to a disk device.
+      installToDisk =
+        {
+          extraArgs ? { },
+        }:
+        let
+          system = mkImageSystem extraArgs;
+          image = system.config.system.build.image;
+          inherit (system.config.system.image) version;
+        in
+        writeShellApplication {
+          name = "install-${version}";
+          runtimeInputs = [
+            coreutils
+            pv
+          ];
+          runtimeEnv = {
+            IMAGE = "${image}/image_${version}.raw";
+          };
+          text = ''
+            if [ "$#" -ne 1 ]; then
+                 echo "Usage: $0 /dev/sdX" >&2
+                 exit 2
+               fi
+               if [ ! -f "$IMAGE" ]; then
+                 echo "Image not found: $IMAGE" >&2
+                 exit 1
+               fi
+               echo "Writing $IMAGE to $1"
+               pv -s "$(stat -c %s "$IMAGE")" "$IMAGE" |
+                 sudo dd of="$1" bs=4M conv=fsync
+               sync
+               echo "Installation complete"
+          '';
         };
-        run-image = runQemu {
-          inherit pkgs;
-          image = expanded-image;
-        };
+    in
+    lib.mkIf stdenv.hostPlatform.isLinux {
+      packages = {
+        image-raw = (mkImageSystem { inherit system; }).config.system.build.image;
+        image-run = runQemu (mkSizedImage {
+          size = "10G";
+        });
+        image-install = installToDisk { };
       };
     };
 }

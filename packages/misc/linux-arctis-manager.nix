@@ -28,5 +28,6 @@ pythonPkgs.buildPythonPackage {
     homepage = "https://api.github.com/${pin.repository.owner}/${pin.repository.repo}";
     description = "A replacement for SteelSeries GG software, to manage your Arctis device on Linux!";
     license = lib.licenses.gpl3;
+    platforms = lib.platforms.linux;
   };
 }

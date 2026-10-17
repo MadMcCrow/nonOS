@@ -1,7 +1,7 @@
 # kde.nix
 # enable the kde desktop
 {
-  modConfig,
+  mkModule,
   mkOptions,
   inputs,
   ...
@@ -12,7 +12,7 @@
   pkgs,
   ...
 }:
-with (modConfig config);
+with (mkModule config);
 let
   users = filter (u: u.isNormalUser) (attrValues config.users.users);
 in

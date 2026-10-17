@@ -1,28 +1,76 @@
-# options.nix
-# helper to show the options defined in a module
-{
-  self,
-  lib,
-  nixpkgs,
-  ...
-}:
-let
-  module = builtins.trace "GOT MODULE" self.nixosModules.default;
+# helper functions for often used patterns in options
+{ lib, ... }: rec {
+  # types for options
+  types = {
+    # helper to allow "auto" or another type;
+    autoOr = type: lib.types.either (lib.types.enum [ "auto" ]) type;
 
-  eval = lib.evalModules {
-    specialArgs = {
-      pkgs = import nixpkgs { system = "x86_64-linux"; };
+    # a size, as a string
+    size = lib.types.mkOptionType {
+      name = "size";
+      description = "a size in bytes (e.g. 4096, 16K, 512M, 32G)";
+      check = value: with builtins; isString value && match "[0-9]+[KMGTP]?" value != null;
     };
-    modules = [
-      module
-      {
-        _module.check = false;
-        disabledModules = [
-          # avoid issues with
-          "${nixpkgs}/nixos/modules/image/repart.nix"
+
+    # a systemd-style duration, as a string
+    duration = lib.types.mkOptionType {
+      name = "duration";
+      description = "a duration (e.g. 10s, 10m, 200ms, 1h)";
+      check = value: with builtins; isString value && match "[0-9]+(us|ms|s|m|h|d|w)?" value != null;
+    };
+
+    fsType =
+      let
+        supportedTypes = [
+          "btrfs"
+          "ext4"
+          "ext2"
+          "f2fs"
+          "xfs"
         ];
-      }
-    ];
+      in
+      (lib.types.enum supportedTypes)
+      // {
+        description = "filesystem type. currently supported are: ${lib.strings.concatStringsSep "," supportedTypes}.";
+      };
   };
-in
-map (opt: lib.concatStringsSep "." opt.loc) (lib.optionAttrSetToDocList eval.options)
+
+  # helper for making custom typed option easily
+  mkTypedOption =
+    type: description: default:
+    lib.mkOption {
+      inherit type description default;
+    };
+
+  # path
+  mkPathOption = mkTypedOption lib.types.path;
+
+  # str
+  mkStrOption = mkTypedOption lib.types.str;
+
+  # bool that isn't enable
+  mkBoolOption = mkTypedOption lib.types.bool;
+
+  # network port type
+  mkIntOption = mkTypedOption lib.types.int;
+
+  # network port type
+  mkPortOption =
+    description: default:
+    lib.mkOption {
+      type = lib.types.port;
+      inherit description default;
+      example = 4040;
+    };
+
+  # our size type
+  mkSizeOption = mkTypedOption types.size;
+
+  # our filesystem option
+  mkFsOption = mkTypedOption types.fsType;
+
+  # any enum :
+  mkEnumOption =
+    description: enum: default:
+    mkTypedOption (lib.types.enum enum) description default;
+}

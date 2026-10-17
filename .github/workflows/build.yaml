@@ -1,0 +1,60 @@
+name: build-image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  raw-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      # The runner has ~14 GB free. The image needs far more.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            extra-substituters = https://nix-community.cachix.org
+            extra-trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+
+      - name: Build raw image
+        run: |
+          nix build .#packages.x86_64-linux.raw-image \
+            --print-build-logs \
+            --out-link result
+
+      - name: Inspect output
+        run: |
+          ls -lhL result/
+          du -h --apparent-size result/image.raw
+          du -h result/image.raw
+
+      # image.raw is sparse and large. Compress before upload.
+      - name: Compress image
+        run: |
+          mkdir -p out
+          zstd -T0 -3 --sparse -o out/nonOS-image.raw.zst result/image.raw
+          ls -lh out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonOS-image
+          path: out/nonOS-image.raw.zst
+          compression-level: 0
+          retention-days: 7
