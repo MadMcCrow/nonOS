@@ -85,8 +85,18 @@
           "aarch64-darwin"
         ]; # lib.systems.flakeExposed;
 
+        # TODO : replace by auto-detect directories
         imports = [
-          (import-tree ./flake)
+          ./dev
+          # ./docs -> need to implement a man/doc output
+          # ./hosts -> TODO
+          ./image
+          ./iso
+          ./lib
+          ./modules
+          ./packages
+          # ./src -> TODO : make our own packages there
+          # ./tools -> maybe merge with dev and/or src
         ];
       }
     );

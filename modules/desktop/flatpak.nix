@@ -13,15 +13,14 @@
   ...
 }:
 with (mkModule config);
+with self.lib.options;
 let
   users = filter (u: u.isNormalUser) (attrValues config.users.users);
 in
 {
   # interface
   options = mkOptions {
-    enable = lib.mkEnableOption "flatpak support" // {
-      default = true;
-    };
+    enable = lib.mkBoolOption "enable flatpak support" true;
     storage = {
       systemDir = lib.mkOption {
         description = "path to bind mount to /var/lib/flatpak";

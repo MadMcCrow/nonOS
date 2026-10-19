@@ -1,3 +1,4 @@
+# treefmt.nix
 # specify how to format the nonOS repository
 # flake part module for apps
 {

@@ -14,16 +14,19 @@
   ...
 }:
 with (mkModule config);
+with self.lib.options;
 {
   # interface
   options = mkOptions {
+    # default to true
+    enable = mkBoolOption "enable the KDE desktop environment" true;
     # not enabled by default
     extras.enable = lib.mkEnableOption "extra KDE apps";
     theme.enable = lib.mkEnableOption "custom KDE theme";
   };
 
   # implementation
-  config = mkIfEnable {
+  config = mkIfEnableAnd cfg.enable {
     # set tag for version
     system.nixos.tags = [ "KDE" ];
 

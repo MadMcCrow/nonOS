@@ -17,7 +17,7 @@ with (mkModule config);
 with self.lib.options;
 {
   options = mkOptions {
-    enable = mkBoolOption "plymouth silent boot" true;
+    enable = mkBoolOption "enable plymouth silent boot" true;
   };
   config = mkIfEnableAnd cfg.enable {
     boot = {
