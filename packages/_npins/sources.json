@@ -1,5 +1,18 @@
 {
   "pins": {
+    "Edna-Light": {
+      "type": "Git",
+      "repository": {
+        "type": "GitLab",
+        "repo_path": "jomada/Edna-Light",
+        "server": "https://gitlab.com/"
+      },
+      "branch": "main",
+      "submodules": false,
+      "revision": "1ca8defe4fa53ed84257e5d8003aa15709fe2873",
+      "url": "https://gitlab.com/api/v4/projects/jomada%2FEdna-Light/repository/archive.tar.gz?sha=1ca8defe4fa53ed84257e5d8003aa15709fe2873",
+      "hash": "sha256-9M+s/rCuOd83jNnuL60BA+/QeUINBa4VqxPEgs+zDEw="
+    },
     "Linux-Arctis-Manager": {
       "type": "GitRelease",
       "repository": {
@@ -61,6 +74,22 @@
       "revision": "eced40ae2752daded053bbece284f5336a5b47da",
       "url": null,
       "hash": "sha256-DHmJpfURyFPeOWxIkfwn4f0n2WeDYErevC1gY2oM3Vg="
+    },
+    "vinyl-theme": {
+      "type": "GitRelease",
+      "repository": {
+        "type": "GitHub",
+        "owner": "ekaaty",
+        "repo": "vinyl-theme"
+      },
+      "pre_releases": false,
+      "version_upper_bound": null,
+      "release_prefix": null,
+      "submodules": false,
+      "version": "v6.5.3",
+      "revision": "e0d75982e59e4c43b6b8297cc4eb263ecc60b117",
+      "url": "https://api.github.com/repos/ekaaty/vinyl-theme/tarball/refs/tags/v6.5.3",
+      "hash": "sha256-c/uLCQ4h2EDpZT82LB4NRWmE5QBWX13C2cedeAe6yxg="
     }
   },
   "version": 8

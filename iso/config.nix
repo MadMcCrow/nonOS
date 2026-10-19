@@ -1,6 +1,10 @@
 # This module defines a NixOS installation CD that contains Plasma 6.
-{ lib, pkgs, nonOS, ... }:
-
+{
+  lib,
+  pkgs,
+  nonOS,
+  ...
+}:
 {
   imports = [
     ./installation-cd-graphical-calamares.nix
@@ -52,5 +56,4 @@
       "/home/nixos/Desktop/calamares.desktop"."L+".argument =
         "${pkgs.calamares-nixos}/share/applications/calamares.desktop";
     };
-
 }

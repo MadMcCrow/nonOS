@@ -6,13 +6,14 @@
   ...
 }:
 let
-image = system : lib.nixosSystem {
-  inherit system;
-  modules = [./config.nix ];
-    specialArgs.nonOS = self;
-};
+  image =
+    system:
+    lib.nixosSystem {
+      inherit system;
+      modules = [ ./config.nix ];
+      specialArgs.nonOS = self;
+    };
 in
-
 {
   # expose our configuration
   flake.nixosConfigurations.image = image "x86-64_linux";

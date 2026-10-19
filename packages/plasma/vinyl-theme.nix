@@ -9,16 +9,16 @@
   unstableGitUpdater,
   ...
 }:
-stdenv.mkDerivation rec {
+let
   pname = "vinyl-theme";
-  version = "v6.5.3";
+  sources = import ../_npins;
+  pin = sources.${pname};
+in
+stdenv.mkDerivation {
+  inherit pname;
+  inherit (pin) version;
 
-  src = fetchFromGitHub {
-    owner = "ekaaty";
-    repo = pname;
-    rev = "e0d75982e59e4c43b6b8297cc4eb263ecc60b117";
-    hash = "";
-  };
+  src = pin;
 
   buildInputs = with kdePackages; [
     kcmutils
@@ -52,6 +52,5 @@ stdenv.mkDerivation rec {
       gpl3Plus
     ];
     platforms = platforms.linux;
-    maintainers = [ ];
   };
 }

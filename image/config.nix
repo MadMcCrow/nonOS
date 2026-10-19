@@ -1,30 +1,34 @@
 # image/config.nix
 # the default image config
+# TODO : provide other images
 {
-  lib, nonOS, ...
+  lib,
+  nonOS,
+  ...
 }:
-
-     inherit system;
-     modules =
-    (with self.nixosModules; [
-       image
-       desktop
-       audio
-       storage
-       customization
-    ]) ++ [
-       {
-         nonOS = {
-           storage.zfs.enable = true;
-           desktop.graphics.amd.enable = true;
-           image.slot.size = "4G";
-           storage.automount = {
-             "nonOS-home" = {
-               mountPoint = "/home";
-               fsType = "auto";
-             };
-           };
-         };
-       }
-     ];
-   }
+{
+  # import all necessary modules
+  import = with nonOS.nixosModules; [
+    image
+    desktop
+    audio
+    storage
+    customization
+  ];
+  # actual config
+  config = {
+    nonOS = {
+      # support AMD hardware to get correct display
+      desktop.graphics.amd.enable = true;
+      image.slot.size = "4G";
+      storage.automount = {
+        "nonOS-home" = {
+          mountPoint = "/home";
+          fsType = "auto";
+        };
+        storage.zfs.enable = true;
+        storage.bcachefs.enable = true;
+      };
+    };
+  };
+}
