@@ -15,7 +15,7 @@ let
       modules = [
         ./config.nix
       ];
-      specialArgs= {
+      specialArgs = {
         nonOS = self;
         inherit inputs;
       };

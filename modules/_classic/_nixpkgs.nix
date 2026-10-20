@@ -13,13 +13,6 @@
 with (mkModule config);
 {
   options = mkOptions {
-    unfreePackages =
-      with lib;
-      mkOption {
-        description = "accepted unfree packages";
-        default = [ ];
-        type = with types; listOf nonEmptyStr;
-      };
     # allow moving the configuration folder
     dir =
       with lib;

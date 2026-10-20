@@ -19,9 +19,7 @@ with (mkModule config);
 
   options = mkOptions {
     # enable secureboot
-    secureboot.enable = lib.mkEnableOption "secureboot" // {
-      default = false;
-    };
+    secureboot.enable = lib.mkEnableOption "secureboot";
     # yubikey,onlykey, etc..
     fido.enable = lib.mkEnableOption "FIDO2 : https://nixos.org/manual/nixos/stable/#sec-luks-file-systems-fido2";
   };

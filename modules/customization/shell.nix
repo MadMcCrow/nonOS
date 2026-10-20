@@ -20,15 +20,14 @@ with self.lib.options;
   options = mkOptions {
     # TODO : move to true
     forceZsh = mkBoolOption "force use zsh as the default shell" false;
-  }
+  };
 
   # implementation
-  config = mkIfEnableAnd cfg.forceZsh
-      {
-        programs = {
-          zsh.enable = true;
-          bash.enable = lib.mkForce false;
-        };
-        users.defaultUserShell = pkgs.zsh;
-      };
+  config = mkIfEnableAnd cfg.forceZsh {
+    programs = {
+      zsh.enable = true;
+      bash.enable = lib.mkForce false;
+    };
+    users.defaultUserShell = pkgs.zsh;
+  };
 }
