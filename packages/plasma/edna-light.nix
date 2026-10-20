@@ -3,10 +3,7 @@
 {
   lib,
   stdenvNoCC,
-  fetchFromGitHub,
-  cmake,
-  kdePackages,
-  unstableGitUpdater,
+  zstd,
   ...
 }:
 let
@@ -16,13 +13,16 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = lib.toLower pname;
-  inherit (pin) version;
+  version = "main";
+  #inherit (pin) version;
 
   src = pin;
 
   nativeBuildInputs = [ zstd ];
   unpackPhase = ''
-    tar -xf  $src
+    ls -la  $src
+    cat $src/install.sh
+    defefsefes
   '';
   installPhase = ''
     mkdir -p $out/share

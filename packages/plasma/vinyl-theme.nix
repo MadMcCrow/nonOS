@@ -3,7 +3,6 @@
 {
   lib,
   stdenv,
-  fetchFromGitHub,
   cmake,
   kdePackages,
   unstableGitUpdater,
@@ -51,6 +50,6 @@ stdenv.mkDerivation {
       gpl2Plus
       gpl3Plus
     ];
-    platforms = platforms.linux;
+    inherit (kdePackages.plasma-workspace.meta) platforms;
   };
 }

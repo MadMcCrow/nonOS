@@ -1,6 +1,6 @@
 {
   "pins": {
-    "edna-light": {
+    "Edna-Light": {
       "type": "Git",
       "repository": {
         "type": "GitLab",

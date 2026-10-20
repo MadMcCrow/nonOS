@@ -6,6 +6,7 @@
   stdenvNoCC,
   fetchurl,
   zstd,
+  kdePackages,
   ...
 }:
 stdenvNoCC.mkDerivation {
@@ -24,4 +25,7 @@ stdenvNoCC.mkDerivation {
     mkdir -p $out/share
     cp -r ./usr/share/* $out/share/
   '';
+  meta = {
+    inherit (kdePackages.plasma-workspace.meta) platforms;
+  };
 }
