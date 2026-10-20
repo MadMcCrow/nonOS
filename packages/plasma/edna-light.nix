@@ -2,7 +2,7 @@
 # https://gitlab.com/jomada/Edna-Light
 {
   lib,
-  stdenv,
+  stdenvNoCC,
   fetchFromGitHub,
   cmake,
   kdePackages,
@@ -10,12 +10,12 @@
   ...
 }:
 let
-  pname = "edna-light";
+  pname = "Edna-Light";
   sources = import ../_npins;
   pin = sources.${pname};
 in
 stdenvNoCC.mkDerivation {
-  inherit pname;
+  pname = lib.toLower pname;
   inherit (pin) version;
 
   src = pin;

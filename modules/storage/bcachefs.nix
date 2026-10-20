@@ -1,5 +1,5 @@
-# zfs.nix
-# Support zfs filesystem
+# bcachefs.nix
+# Support bcachefs filesystem
 {
   mkModule,
   mkOptions,
@@ -20,11 +20,19 @@ with self.lib.options;
     enable = lib.mkEnableOption "bcachefs filesystem support";
   };
   config = lib.mkIfEnableAnd cfg.enable {
-    # Required as a workaround for bug
+    # make sure it's supported at boot
+    boot = {
+      supportedFilesystems = [ "bcachefs" ];
+      # probably superfluous
+      extraModulePackages = [
+          config.boot.kernelPackages.bcachefs
+      ];
+    };
+    # keyutils is required as a workaround for bug
     # https://github.com/NixOS/nixpkgs/issues/32279
-    environment.systemPackages = [ pkgs.keyutils ];
-    boot.supportedFilesystems = [ "bcachefs" ];
-
+    environment.systemPackages = with pkgs; [
+      keyutils bcachefs-tools
+    ];
     #TODO :
     # add https://wiki.nixos.org/wiki/Bcachefs#Remote_encrypted_disk_unlocking
     #

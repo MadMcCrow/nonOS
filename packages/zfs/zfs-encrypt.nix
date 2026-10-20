@@ -7,7 +7,7 @@ inputs@{
   ...
 }:
 symlinkJoin {
-  name = "zfs-ecrypt";
+  name = "zfs-encrypt";
   paths = map (x: callPackage x inputs) [
     ./fzifdso.nix
     ./tzpfms.nix

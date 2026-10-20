@@ -13,29 +13,31 @@ args@{
       lib,
       ...
     }:
+    with lib;
+    with builtins;
     let
-      # list all directories to parse (ignore the ones starting with "_")
-      pkgsDir = builtins.attrNames (
-        lib.filterAttrs (name: type: type == "directory" && !(lib.hasPrefix "_" name)) (
-          builtins.readDir ./.
+      # list all directories to parse
+      pkgsDir = attrNames (
+        filterAttrs (name: type: type == "directory" && !(hasPrefix "_" name)) (
+          readDir ./.
         )
       );
-      # now get all the nix files (import-tree needs real paths, not strings)
-      pkgsFiles = lib.flatten (map (d: inputs.import-tree.leaves (./. + "/${d}")) pkgsDir);
+      # import-tree needs real paths
+      pkgsFiles = flatten (map (d: inputs.import-tree.leaves (./. + "/${d}")) pkgsDir);
       # merge into an attributeSet
-      allPackages = builtins.listToAttrs (
+      allPackages = listToAttrs (
         map (
           x:
           let
             p = pkgs.callPackage x args;
           in
-          lib.nameValuePair (lib.getName p) p
+          nameValuePair (getName p) p
         ) pkgsFiles
       );
     in
     {
       # only expose packages supported on this platform
-      packages = lib.filterAttrs (_: v: lib.meta.availableOn pkgs.stdenv.hostPlatform v) allPackages;
+      packages = filterAttrs (_: v: meta.availableOn pkgs.stdenv.hostPlatform v) allPackages;
 
       # add an update script
       apps.update =
@@ -43,13 +45,13 @@ args@{
         let
           # update pinned sources
           script = writeShellScriptBin "update-pins" ''
-            root=$(${lib.getExe git} rev-parse --show-toplevel)
-            ${lib.getExe npins} -d "$root/packages/_npins" update
+            root=$(${getExe git} rev-parse --show-toplevel)
+            ${getExe npins} -d "$root/packages/_npins" update
           '';
         in
         {
           type = "app";
-          program = "${lib.getExe script}";
+          program = "${getExe script}";
         };
     };
 }
