@@ -4,6 +4,7 @@
   mkModule,
   mkOptions,
   inputs,
+  self,
   ...
 }:
 {
@@ -20,7 +21,7 @@ in
 {
   # interface
   options = mkOptions {
-    enable = lib.mkBoolOption "enable flatpak support" true;
+    enable = mkBoolOption "enable flatpak support" true;
     storage = {
       systemDir = lib.mkOption {
         description = "path to bind mount to /var/lib/flatpak";

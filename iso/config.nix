@@ -3,57 +3,70 @@
   lib,
   pkgs,
   nonOS,
+  inputs,
   ...
 }:
+let
+  name = nonOS.lib.meta.name;
+  username = "nixos"; # we use the nixos config, so we can't/ won't override too much
+  # installer module
+  live-iso = "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-base.nix";
+in
 {
   imports = [
-    ./installation-cd-graphical-calamares.nix
+    live-iso
     nonOS.nixosModules.desktop
     nonOS.nixosModules.storage
     nonOS.nixosModules.customization
   ];
 
-  isoImage.edition = lib.mkDefault "nonOS";
+  config = {
 
-  services.desktopManager.plasma6 = {
-    enable = true;
-    # enableQt5Integration = false;
+  nonOS = {
+      storage.zfs.enable = true;
+      storage.bcachefs.enable = true;
+      desktop.apps.enable = true;
   };
 
-  # Automatically login as nixos.
-  services.displayManager = {
-    plasma-login-manager.enable = true;
-    autoLogin = {
-      enable = true;
-      user = "nixos";
-    };
-  };
+  # name of the iso
+  isoImage.edition = name;
 
-  environment.plasma6.excludePackages = [
-    # Optional wallpapers that add 126 MiB to the graphical installer
-    # closure. They will still need to be downloaded when installing a
-    # Plasma system, though.
-    pkgs.kdePackages.plasma-workspace-wallpapers
+  # give user a way to format drives
+  programs.partition-manager.enable = true;
+
+  # add a simple text editor
+  environment.systemPackages = with pkgs; [
+    nano
   ];
 
-  # Avoid bundling an entire MariaDB installation on the ISO.
-  programs.kde-pim.enable = false;
+  # Support choosing from any locale
+  i18n.supportedLocales = [ "all" ];
 
-  systemd.tmpfiles.settings."10-installer-desktop" =
-    let
-      # Comes from documentation.nix when xserver and nixos.enable are true.
-      manualDesktopFile = "/run/current-system/sw/share/applications/nixos-manual.desktop";
-    in
-    {
-      "/home/nixos/Desktop".d = {
-        user = "nixos";
-        group = "users";
-        mode = "0755";
-      };
-      "/home/nixos/Desktop/nixos-manual.desktop"."L+".argument = manualDesktopFile;
-      "/home/nixos/Desktop/gparted.desktop"."L+".argument =
-        "${pkgs.gparted}/share/applications/gparted.desktop";
-      "/home/nixos/Desktop/calamares.desktop"."L+".argument =
-        "${pkgs.calamares-nixos}/share/applications/calamares.desktop";
+  # Automatically login as nixos;
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = username;
+  };
+
+  # Whitelist wheel users to do anything
+  security.polkit = {
+    enablePkexecWrapper = true;
+    extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (subject.isInGroup("wheel")) {
+          return polkit.Result.YES;
+        }
+      });
+    '';
+  };
+
+  systemd.tmpfiles.settings."10-installer-desktop" = {
+    "/home/name/Desktop".d = {
+      user = username;
+      group = "users";
+      mode = "0755";
     };
+  };
+  system.stateVersion = lib.mkForce "26.11";
+};
 }

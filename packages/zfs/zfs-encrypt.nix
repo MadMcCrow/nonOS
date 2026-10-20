@@ -16,9 +16,7 @@ in
 symlinkJoin {
   name = "zfs-encrypt";
   paths = packages;
-  version = with builtins; head (
-     lib.sort
-       (a: b: compareVersions a b > 0)
-       (map (pkg: pkg.version) packages)
-   );
+  version =
+    with builtins;
+    head (lib.sort (a: b: compareVersions a b > 0) (map (pkg: pkg.version) packages));
 }

@@ -45,15 +45,19 @@ in
     # use a compatible kernel
     boot = {
       kernelPackages = latestKernelPackage;
-      zfs.allowHibernation = true;
+      zfs.unsafeAllowHibernation = true;
       supportedFilesystems.zfs = true;
     };
+
     # make sure everything is available
     services.zfs = {
       autoScrub.enable = true;
       trim.enable = true; # is already true by default
       autoSnapshot.enable = true; # only work on dataset marked with snapshots
-      autoReplication.enable = true; # replication of snapshots
+
+      # auto replication needs a user to be specified
+      # autoReplication.enable = true; # replication of snapshots
+
       expandOnBoot = "all";
     };
     # add our zfs encryption tool

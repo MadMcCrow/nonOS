@@ -3,6 +3,7 @@
 {
   self,
   lib,
+  inputs,
   ...
 }:
 let
@@ -14,7 +15,10 @@ let
       modules = [
         ./config.nix
       ];
-      specialArgs.nonOS = self;
+      specialArgs= {
+        nonOS = self;
+        inherit inputs;
+      };
     };
 in
 {

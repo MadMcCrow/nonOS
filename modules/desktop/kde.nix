@@ -23,6 +23,8 @@ with self.lib.options;
     # not enabled by default
     extras.enable = lib.mkEnableOption "extra KDE apps";
     theme.enable = lib.mkEnableOption "custom KDE theme";
+    # use the old sddm :
+    useLegacySddm = lib.mkEnableOption "sddm instead of plasma-login-manager";
   };
 
   # implementation
@@ -33,11 +35,14 @@ with self.lib.options;
     # enable KDE :
     services = {
       desktopManager.plasma6.enable = true;
-      displayManager.sddm = {
-        enable = true;
-        autoNumlock = true;
-        # this prevents issues with nvidia drivers
-        wayland.enable = !(builtins.any (x: x == "nvidia") config.services.xserver.videoDrivers);
+      displayManager = {
+        plasma-login-manager.enable = !cfg.useLegacySddm;
+        sddm = lib.mkIf cfg.useLegacySddm {
+          enable = true;
+          autoNumlock = true;
+          # this prevents issues with nvidia drivers
+          wayland.enable = !(builtins.any (x: x == "nvidia") config.services.xserver.videoDrivers);
+        };
       };
 
       xserver = {
@@ -67,15 +72,17 @@ with self.lib.options;
       dconf.enable = true;
       kdeconnect.enable = true;
       partition-manager.enable = true;
+      # Avoid bundling an entire MariaDB installation
       kde-pim.enable = cfg.extras.enable;
     };
 
+    # KDE needs power management backend such as upower
+    powerManagement.enable = true;
+
     # remove unecessary KDE packages (minimal kde experience)
-    environment.plasma6.excludePackages = lib.optionals (!cfg.extras.enable) (
+    environment.plasma6.excludePackages =
       with pkgs.kdePackages;
-      [
-        oxygen-icons
-        oxygen
+      (lib.optionals (!cfg.extras.enable) [
         khelpcenter
         plasma-browser-integration
         print-manager
@@ -87,8 +94,12 @@ with self.lib.options;
         okular
         elisa
         akonadi
-      ]
-    );
+      ])
+      ++ (lib.optionals (!cfg.theme.enable) [
+        oxygen-icons
+        oxygen
+        plasma-workspace-wallpapers
+      ]);
 
     environment.systemPackages =
       with pkgs;

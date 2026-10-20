@@ -18,9 +18,7 @@ args@{
     let
       # list all directories to parse
       pkgsDir = attrNames (
-        filterAttrs (name: type: type == "directory" && !(hasPrefix "_" name)) (
-          readDir ./.
-        )
+        filterAttrs (name: type: type == "directory" && !(hasPrefix "_" name)) (readDir ./.)
       );
       # import-tree needs real paths
       pkgsFiles = flatten (map (d: inputs.import-tree.leaves (./. + "/${d}")) pkgsDir);
