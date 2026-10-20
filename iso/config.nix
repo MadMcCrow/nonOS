@@ -41,9 +41,9 @@ in
     ];
 
     # make for an even smaller iso :
-    services.speechd.enable = mkForce false;
-    documentation.info.enable = mkForce false;
-    documentation.nixos.enable = mkForce false;
+    services.speechd.enable = lib.mkForce false;
+    documentation.info.enable = lib.mkForce false;
+    documentation.nixos.enable = lib.mkForce false;
 
     # Support choosing from any locale
     i18n.supportedLocales = [ "all" ];

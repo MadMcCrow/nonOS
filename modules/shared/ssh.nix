@@ -16,10 +16,10 @@
 with self.lib.options;
 let
   inherit (lib) mkDefault;
-  cfg = config.${meta}.ssh;
+  cfg = config.${meta.name}.ssh;
 in
 {
-  options.${meta}.ssh = {
+  options.${meta.name}.ssh = {
     ssh4All = {
       enable = lib.mkEnableOption "ssh access for all users";
       passwordless = mkBoolOption "make ssh work only with key" false;

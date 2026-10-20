@@ -11,15 +11,17 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 with self.lib.options;
 let
-  cfg = config.${meta}.nixpkgs;
+  cfg = config.${meta.name}.nixpkgs;
+  inherit (lib) mkDefault mkForce;
 in
 {
   # we go fully shared
-  options.${meta}.nixpkgs = {
+  options.${meta.name}.nixpkgs = {
     # support defining unfree packages
     unfreePackages = mkTypedOption (with types; listOf nonEmptyStr) "accepted unfree packages" [ ];
     # avoid appending the whole nixpkgs sources to the closure
@@ -66,11 +68,11 @@ in
 
       # TODO : build from actual input
       nix = {
-        nixPath = lib.mkDefault [
+        nixPath = mkDefault [
           "nixpkgs=https://github.com/NixOS/nixpkgs/archive/${inputs.nixpkgs.rev}.tar.gz"
         ];
         # TODO : replace with the actual input for repo/owner
-        registry.nixpkgs.to = lib.mkDefault {
+        registry.nixpkgs.to = mkDefault {
           type = "github";
           owner = "NixOS";
           repo = "nixpkgs";
