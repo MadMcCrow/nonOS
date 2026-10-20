@@ -13,8 +13,7 @@
 with (mkModule config);
 {
   options = mkOptions {
-    # global option to allow unfree packages in other modules
-    _unfreePackages =
+    unfreePackages =
       with lib;
       mkOption {
         description = "accepted unfree packages";
@@ -22,7 +21,7 @@ with (mkModule config);
         type = with types; listOf nonEmptyStr;
       };
     # allow moving the configuration folder
-    _dir =
+    dir =
       with lib;
       mkOption {
         description = "configuration directory";

@@ -9,12 +9,11 @@
 let
   name = nonOS.lib.meta.name;
   username = "nixos"; # we use the nixos config, so we can't/ won't override too much
-  # installer module
-  live-iso = "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-base.nix";
 in
 {
   imports = [
-    live-iso
+    "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-base.nix";
+    "${inputs.nixpkgs}/nixos/modules/profiles/minimal.nix"
     nonOS.nixosModules.desktop
     nonOS.nixosModules.storage
     nonOS.nixosModules.customization
@@ -38,6 +37,11 @@ in
   environment.systemPackages = with pkgs; [
     nano
   ];
+
+  # make for an even smaller iso :
+  services.speechd.enable = mkForce false;
+  documentation.info.enable = mkForce false;
+  documentation.nixos.enable = mkForce false;
 
   # Support choosing from any locale
   i18n.supportedLocales = [ "all" ];
