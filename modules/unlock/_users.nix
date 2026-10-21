@@ -1,6 +1,6 @@
 # users.nix
-# offer the ssh4all option and sets mutable users according
 # to the rest of your config;
+# TODO : does this belong here ?
 {
   mkModule,
   mkOptions,

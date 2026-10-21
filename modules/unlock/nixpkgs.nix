@@ -1,8 +1,10 @@
 # nixpkgs.nix
-# define how nonOS gets its nixpkgs
+# define how nonOS gets its nixpkgs revision.
 {
   mkModule,
   mkOptions,
+  meta,
+  self,
   ...
 }:
 {
@@ -11,32 +13,15 @@
   ...
 }:
 with (mkModule config);
+with self.lib.options;
+let
+
+in
 {
   options = mkOptions {
     # allow moving the configuration folder
-    dir =
-      with lib;
-      mkOption {
-        description = "configuration directory";
-        default = "/etc/${nonOS.name}";
-        type = types.path;
-      };
+    dir = mkPathOption "configuration directory" "/etc/${nonOS.name}";
     sources =
-      with lib;
-      mkOption {
-        description = ''
-          the npins source of nixpkgs
-          use :
-                ```
-                  let sources = import ./npins;
-                  ...
-                  nonOS.nixpkgs.sources = sources.nixpkgs;
-                ```
-          to use the pins nixpkgs
-        '';
-        type = with types; nullOr path;
-        default = null;
-      };
   };
 
   config = mkIfEnable {
@@ -47,8 +32,7 @@ with (mkModule config);
       };
 
       nixPath = [
-        "nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos"
-        "/nix/var/nix/profiles/per-user/root/channels"
+        "nixpkgs=https://github.com/NixOS/nixpkgs/archive/${inputs.nixpkgs.rev}.tar.gz"
         "nixpkgs=flake:nixpkgs"
       ];
 

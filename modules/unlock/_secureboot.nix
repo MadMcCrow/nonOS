@@ -1,7 +1,5 @@
-# boot.nix
-# define how nonOS boots
-# customization.nix
-# replace nixOS by nonOS in the various config files
+# secureboot.nix
+# define how nonOS boots : does this belongs in this module ?
 {
   mkModule,
   mkOptions,
