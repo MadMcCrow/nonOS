@@ -29,5 +29,10 @@ with self.lib.options;
       bash.enable = lib.mkForce false;
     };
     users.defaultUserShell = pkgs.zsh;
+
+    # useful to launch programs without installing them.
+    environment.systemPackages = with pkgs; [
+      comma
+    ];
   };
 }

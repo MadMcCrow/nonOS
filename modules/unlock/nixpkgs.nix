@@ -15,15 +15,21 @@
 with (mkModule config);
 with self.lib.options;
 let
-
+  # we should read an impure file for the nixpkgs version
+  # nixpkgs-unlock = (builtins.fromJSON (builtins.readFile)).nixpkgs;
 in
 {
+  # TODO : ADD impurity
+  imports = [];
+
+  #
   options = mkOptions {
     # allow moving the configuration folder
     dir = mkPathOption "configuration directory" "/etc/${nonOS.name}";
-    sources =
+    initialRevision = "";
   };
 
+  #
   config = mkIfEnable {
     nix = {
       registry.nixpkgs.to = mkIf (cfg.sources != null) {
@@ -36,7 +42,9 @@ in
         "nixpkgs=flake:nixpkgs"
       ];
 
-      package = pkgs.lix;
+      # some othe module could use tvix or nix
+      # but this is tested with lix.
+      package = lib.mkDefault pkgs.lix;
 
       settings = {
         # keep flake and commands
@@ -66,6 +74,7 @@ in
       config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) config._unfreePackages;
       # this should not be done
       # pkgs = import (import "${cfg._dir}/npins").nixpkgs { };
+
     };
 
     system = {

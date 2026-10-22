@@ -10,15 +10,23 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
+
+    # allows working without flakes
     flake-compat = {
       url = "https://git.lix.systems/lix-project/flake-compat/archive/main.tar.gz";
       flake = false;
     };
+
+    # import all implicitly
     import-tree.url = "github:denful/import-tree";
+
+    # auto format
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    #  auto define egit hooks
     git-hooks-nix = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,16 +38,22 @@
       url = "github:nix-community/disko/latest";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # hardware
     nixos-hardware = {
       url = "github:NixOS/nixos-hardware/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # secureboot support
     lanzaboote = {
       url = "github:nix-community/lanzaboote/v1.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.pre-commit.inputs.flake-compat.follows = "flake-compat";
     };
-
+    # impurity has no inputs
+    impurity = {
+      url = "github:outfoxxed/impurity.nix";
+    }
+    # better flatpak support
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
