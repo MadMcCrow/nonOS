@@ -1,21 +1,29 @@
 # npins sync command for updating the system with npins
-# requires a compiler for building and npins at runtime
+# static Go binary. npins is called by absolute store path.
 {
   lib,
-  stdenv,
+  buildGoModule,
   npins,
+  go,
   ...
 }:
-stdenv.mkDerivation rec {
+buildGoModule {
   pname = "npins-sync";
   version = "0.1";
-  buildInputs = [npins];
   src = ./npins-sync;
-  installPhase = ''
-    mkdir -p $out/bin
-    cp ${pname} $out/bin/
-  '';
+
+  # no external Go dependencies
+  vendorHash = null;
+  env.CGO_ENABLED = "0";
+
+  ldflags = [
+    "-s"
+    "-w"
+    "-X main.npinsBin=${lib.getExe npins}"
+  ];
+
   meta = {
-    mainProgram = pname;
+    mainProgram = "npins-sync";
+    platforms = lib.intersectLists go.meta.platforms npins.meta.platforms;
   };
 }
