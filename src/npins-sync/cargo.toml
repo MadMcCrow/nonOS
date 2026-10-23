@@ -1,0 +1,15 @@
+[package]
+name = "npins-sync"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+opt-level = "z"     # optimise for size
+lto = true          # link-time optimisation
+codegen-units = 1
+panic = "abort"     # no unwinding code
+strip = true
+
+[[bin]]
+name = "npins-sync"
+path = "src/main.rs"
