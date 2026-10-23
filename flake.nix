@@ -1,3 +1,4 @@
+# nixpkgs
 {
   description = "NonOS is an opinionated OS based on NixOS";
 
@@ -50,13 +51,10 @@
       inputs.pre-commit.inputs.flake-compat.follows = "flake-compat";
     };
     # impurity has no inputs
-    impurity = {
-      url = "github:outfoxxed/impurity.nix";
-    }
+    # impurity.url = "github:outfoxxed/impurity.nix";
+
     # better flatpak support
-    nix-flatpak = {
-      url = "github:gmodena/nix-flatpak/?ref=latest";
-    };
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
 
     # python
     pyproject-nix = {
@@ -101,7 +99,8 @@
 
         # TODO : replace by auto-detect directories
         imports = [
-          ./dev
+          ./dev # shells and development tools
+          # (sources can be in packages or src depending on who develops it)
           # ./docs -> need to implement a man/doc output
           # ./hosts -> TODO
           ./image
@@ -109,8 +108,7 @@
           ./lib
           ./modules
           ./packages
-          # ./src -> TODO : make our own packages there
-          # ./tools -> maybe merge with dev and/or src
+          ./src
         ];
       }
     );

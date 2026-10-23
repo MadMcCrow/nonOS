@@ -19,3 +19,7 @@ result
 
 # log files
 *.log
+
+# test folders
+test
+.test
