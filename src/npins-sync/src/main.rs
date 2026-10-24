@@ -14,9 +14,6 @@ use crate::npins::sync;
 use crate::npins::Source;
 
 
-const USAGE: &str = "Usage: npins-sync [-f] -d directory (-u url/branch | -c channel)";
-
-
 fn main() -> ExitCode {
     let args = match parse(env::args().skip(1)) {
         Ok(a) => a,

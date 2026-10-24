@@ -31,13 +31,14 @@ in
       install = callPackage ./install.nix args;
     in
     lib.mkIf stdenv.hostPlatform.isLinux {
-      packages = let
-        image-config = (image system);
+      packages =
+        let
+          image-config = image system;
         in
         {
-        image-raw     = image-config.config.system.build.image;
-        image-run     = qemu image-config;
-        image-install = install image-config;
-      };
+          image-raw = image-config.config.system.build.image;
+          image-run = qemu image-config;
+          image-install = install image-config;
+        };
     };
 }

@@ -30,9 +30,9 @@ in
 
     # make sure we can use flakes and commands
     nix.settings.experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
+      "nix-command"
+      "flakes"
+    ];
 
     # name of the iso
     isoImage.edition = name;

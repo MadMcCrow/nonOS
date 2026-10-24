@@ -21,14 +21,16 @@
       # support AMD hardware to get correct display
       desktop.graphics.amd.enable = true;
       image.slot.size = "4G";
-      storage.automount = {
-        "nonOS-home" = {
-          mountPoint = "/home";
-          fsType = "auto";
+      storage = {
+        automount = {
+          "nonOS-home" = {
+            mountPoint = "/home";
+            fsType = "auto";
+          };
         };
-        storage.zfs.enable = true;
-        storage.bcachefs.enable = true;
+          zfs.enable = false;
+          bcachefs.enable = true;
+        };
       };
-    };
   };
 }

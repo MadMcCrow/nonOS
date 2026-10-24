@@ -29,7 +29,12 @@ let
         in
         {
           # provide values and shortcuts
-          inherit inputs meta self moduleName;
+          inherit
+            inputs
+            meta
+            self
+            moduleName
+            ;
           inherit (meta) name;
           mkPrio = lib.mkOverride 990; # mkDefault but higher priority
 

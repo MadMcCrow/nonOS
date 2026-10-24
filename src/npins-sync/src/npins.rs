@@ -7,10 +7,6 @@ use crate::dir::{clear_dir, is_empty};
 // Name of the pin for nixpkgs.
 const PIN_NAME: &str = "nixpkgs";
 
-pub enum Source {
-    Channel(String),
-    Git(String), // "url/branch"
-}
 
 // Set at build time by the Nix derivation (env.NPINS_BIN)
 // Fallback: PATH lookup when built by plain cargo

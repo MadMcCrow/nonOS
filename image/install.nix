@@ -10,7 +10,7 @@
 configuration:
 let
   image = configuration.config.system.build.image;
-  inherit (image) version;
+  inherit (configuration.config.system.image) version;
 in
 writeShellApplication {
   name = "install-${version}";
