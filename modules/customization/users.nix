@@ -16,6 +16,7 @@
 }:
 with (mkModule config);
 with self.lib.options;
+with builtins;
 {
   # interface
   options = mkOptions {
@@ -23,7 +24,7 @@ with self.lib.options;
 
   config = mkIfEnable {
     # enable mutable users if no user is set to admin
-    mutableUsers = lib.mkDefault (
+    users.mutableUsers = lib.mkDefault (
       !(any (u: u.group == "wheel" || (any (g: g == "wheel") u.extraGroups)) (
         attrValues config.users.users
       ))

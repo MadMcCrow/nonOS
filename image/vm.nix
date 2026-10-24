@@ -2,6 +2,8 @@
 {
   lib,
   writeShellApplication,
+  OVMF,
+  qemu,
   ...
 }:
 let
