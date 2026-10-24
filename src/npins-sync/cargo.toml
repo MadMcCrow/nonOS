@@ -13,3 +13,6 @@ strip = true
 [[bin]]
 name = "npins-sync"
 path = "src/main.rs"
+
+[build]
+rustflags = ["-C", "prefer-dynamic"]

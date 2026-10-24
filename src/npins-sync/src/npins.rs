@@ -4,6 +4,9 @@
 use std::process::{Command};
 use crate::dir::{clear_dir, is_empty};
 
+// Name of the pin for nixpkgs.
+const PIN_NAME: &str = "nixpkgs";
+
 pub enum Source {
     Channel(String),
     Git(String), // "url/branch"
@@ -38,17 +41,14 @@ fn run(args: &[&str]) -> Result<(), String> {
     }
 }
 
-
-
 // bare npins directory and add nixpkgs
 fn init_pins(path: &str, source: &Source) -> Result<(), String> {
     run(&["-d", path, "init", "--bare"])?;
     match source {
-        Source::Channel(name) => run(&["-d", path, "add", "channel", name]),
-        Source::Git(src) => {
-            let (url, branch) = split_url(src)?;
-            run(&["-d", path, "add", "git", url, "--branch", branch])
-        }
+        Source::Channel(name) => run(&["-d", path, "add", "--name", PIN_NAME, "channel", name]),
+        Source::Git { url, branch } => run(&[
+            "-d", path, "add", "--name", PIN_NAME, "git", url, "--branch", branch,
+        ]),
     }
 }
 

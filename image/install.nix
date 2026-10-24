@@ -3,6 +3,8 @@
   self,
   lib,
   writeShellApplication,
+  coreutils,
+  pv,
   ...
 }:
 configuration:

@@ -8,7 +8,7 @@
 }:
 {
   # import all necessary modules
-  import = with nonOS.nixosModules; [
+  imports = with nonOS.nixosModules; [
     image
     desktop
     audio

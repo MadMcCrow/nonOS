@@ -25,6 +25,7 @@ let
     name = "${basename}-sync-npins";
     runtimeInputs = [ pkgs.npins ];
 
+    # TODO : replace by a
     text = ''
       NPINS_DIR=${lib.escapeShellArg (toString cfg.directory)}
       CLEAN_ON_FAILURE="''${CLEAN_ON_FAILURE:-${lib.boolToString cfg.cleanOnFailure}}"
@@ -96,7 +97,6 @@ let
       fi
     '';
   };
-
 in
 {
 

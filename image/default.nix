@@ -1,5 +1,5 @@
 # flake part module for building test configurations
-{
+args@{
   self,
   inputs,
   lib,

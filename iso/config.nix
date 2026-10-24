@@ -14,7 +14,6 @@ in
   imports = [
     "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-base.nix"
     "${inputs.nixpkgs}/nixos/modules/profiles/minimal.nix"
-    nonOS.nixosModules.shared # TODO : make this a default import for other modules
     nonOS.nixosModules.desktop
     nonOS.nixosModules.storage
     nonOS.nixosModules.customization
@@ -22,12 +21,18 @@ in
 
   config = {
     # our special sauce :
-    nonOS = {
+    ${name} = {
       storage.zfs.enable = true;
       storage.bcachefs.enable = true;
-      desktop.apps.enable = true;
+      desktop.flatpak.enable = true; # defaults to true, but make sure it's on
       nixpkgs.removeSources = true; # hopefully we get network !
     };
+
+    # make sure we can use flakes and commands
+    nix.settings.experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
 
     # name of the iso
     isoImage.edition = name;
