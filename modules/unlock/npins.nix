@@ -11,63 +11,79 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 with (mkModule config);
 with self.lib.options;
 let
   # base name for the services and scripts
-  basename = "${meta.name}-${moduleName}";
+  serviceName = "${meta.name}-${moduleName}";
 
-  # sync process :
-  # init the local sources and or
-  script = pkgs.writeShellApplication {
-    name = "${basename}-sync-npins";
-    runtimeInputs = [ pkgs.npins ];
+  # sync script :
+  script = self.packages.${pkgs.stdenv.hostPlatform.system}.npins-sync;
 
-    # TODO : replace by a
-    text = "";
+  # shortcut
+  sh = lib.escapeShellArg;
 
-  };
+  # environment variables for running npins-sync
+  envVars = lib.mkMerge [{
+    NPINS_SYNC_DIR = sh cfg.path;
+    NPINS_SYNC_OPTIONS = lib.strings.concatMapStringsSep " " sh cfg.extraOptions;
+    # NPINS_SYNC_FORCE  = "0";  # force is requiered for manual operations.
+    # it should not be enabled
+  }
+  (lib.mkIf (mod.nixpkgs ? "channel") {
+     NPINS_SYNC_CHANNEL = sh mod.nixpkgs.channel;
+  })
+  (lib.mkIf (mod.nixpkgs ? "url") {
+      NPINS_SYNC_GIT_URL = sh mod.nixpkgs.url;
+      NPINS_SYNC_GIT_BRANCH = sh mod.nixpkgs.branch;
+  })
+  ];
+
 in
 {
-
-  #
+  # interface
   options = mkOptions {
-    path = mkPathOption "where to store the lock file" "/etc/${meta.name}/${moduleName}/npins";
-    options = lib.mkOption {
-       description = "list of options to use when calling `npins`"l;
+    # set automatically by the implementation submodule
+    enabled = lib.mkEnableOption "npins implementation for the ${moduleName} module";
+    # TODO : make the nix expression that imports the npins sources
+    path = mkPathOption "where to store the lock file" "${mod.path}/npins";
+    extraOptions = lib.mkOption {
+       description = ''
+         list of options to use when calling `npins`
+         '';
        type = with lib.types; listOf str;
-       default =  [ "--max-concurrent-downloads $(${coreutils}/bin/nproc)" ];
-     };
-     nixpkgs = lib.mkOption {
-        description = "How to fetch the nixpkgs sources";
-         type = lib.types.either
-          # follow official channels, hosted on Amazon servers
-           (lib.types.submodule {
-             options.channel = mkStrOption "branch to use" "nixos-unstable";
-             }
-           )
-           # download from github servers
-           (lib.types.submodule {
-             options.url = mkStrOption "nixpkgs git repository url" "https://github.com/nixOS/nixpkgs.git";
-             options.branch = mkStrOption "branch to use" "nixos-unstable";
-           });
-           # default to channels : faster
-           default = {
-             channel = "nixos-unstable";
-          };
+       example = [ "--max-concurrent-downloads $(${coreutils}/bin/nproc)" ];
+       default = [];
      };
   };
 
   #
-  config = mkIfEnable {
+  config = mkIfEnableAnd cfg.enable {
     # make sure the configuration path exist
     systemd.tmpfiles.rules = [
       "d ${cfg.path} 0755 root root - -"
     ];
-    services."${name}-sync" = {
 
-    }
+    systemd.services."${serviceName}-npins" = {
+        description = "npins sync for the ${moduleName} module";
+        # TODO : maybe use some other target ?
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network.target" ];
+        environment = envVars;
+        # TODO : change this
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = lib.getExe script;
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
+      };
+
+      # TODO : either add script and envVars to environment
+      # and let the user call it manually. or wrap it with
+      # force set to true to allow for repairs.
   };
 }

@@ -4,6 +4,7 @@
   mkModule,
   mkOptions,
   self,
+  meta,
   ...
 }:
 {
@@ -20,9 +21,21 @@ with self.lib.options;
       enable = mkBoolOption "remote management from Cockpit" true;
       port = mkPortOption "port for the Cockpit webUI" 457;
     };
+    #
+    addDefaultUser = mkBoolOption "add a default, non-root user" true;
   };
 
   config = mkIfEnable {
+    # defaultUser
+    users.users.${meta.name} = lib.mkIf cfg.addDefaultUser {
+      isNormalUser = true;
+      description = "${meta.name} default user";
+      extraGroups = [
+        "wheel"
+        "networkmanager"
+      ];
+    };
+
     # dhcp or hostnamed
     networking = {
       hostName = lib.mkForce "";

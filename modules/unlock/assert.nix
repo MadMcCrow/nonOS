@@ -26,12 +26,6 @@ in
       assertion = (optionTrue "nonOS.image.enable") || (optionTrue "image.repart.enable");
       message = "unlock conflicts with image, only use one at a time";
     }
-    {
-      # we can't use both backend at once.
-      # changing backend might cause issues.
-      # TODO: add a warning at eval if the backend changes from the currently running OS.
-      assertion = config.${moduleName}.npins.enable != config.${moduleName}.tack.enable;
-      message = "only one of tack and npins can be used as a backend for the source pinning";
-    }
+
   ];
 }

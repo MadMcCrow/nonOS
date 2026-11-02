@@ -28,9 +28,9 @@
             fsType = "auto";
           };
         };
-          zfs.enable = false;
-          bcachefs.enable = true;
-        };
+        zfs.enable = false;
+        bcachefs.enable = true;
       };
+    };
   };
 }

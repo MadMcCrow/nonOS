@@ -1,19 +1,29 @@
 # npins sync command for updating the system with npins
 {
   lib,
-  rustPlatform,
+  stdenvNoCC,
   npins,
+  shellcheck,
+  self,
   ...
 }:
-rustPlatform.buildRustPackage {
+let
+  script = "npins-sync.sh";
+in
+stdenvNoCC.mkDerivation {
   pname = "npins-sync";
-  version = "0.1";
+  inherit (self.lib.meta) version;
   src = ./npins-sync;
-
-  # no external crates : the lock file only lists this package
-  cargoLock.lockFile = ./npins-sync/Cargo.lock;
-
-  env.NPINS_BIN = lib.getExe npins;
-
-  meta.mainProgram = "npins-sync";
+  patchPhase = ''
+    # patch shell
+    patchShebangs ${script}
+    # patch npins
+    substituteInPlace ${script} --replace-fail "NPINS_BIN=\"npins\"" "NPINS_BIN=\"${lib.getExe npins}\""
+  '';
+  nativeBuildInputs = [ shellcheck ];
+  buildInputs = [ npins ];
+  checkPhase = "shellcheck ${script}";
+  installPhase = ''
+    install -Dm755 ${script} $out/bin/npins-sync
+  '';
 }
