@@ -19,12 +19,11 @@ with self.lib.options;
 {
   # interface
   options = mkOptions {
-    enable = lib.mkEnableOption "tack implementation for ${moduleName}";
-    # TODO :
+    _enable = lib.mkEnableOption "tack implementation for ${moduleName}";
   };
 
-  # WIP
-  config = mkIfEnableAnd cfg.enable {
+  # WIP : disabled until PoC is done
+  config = mkIfEnableAnd cfg._enable {
     assertions = [
       {
         assertion = cfg.enable;

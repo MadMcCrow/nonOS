@@ -47,7 +47,7 @@ in
   # interface
   options = mkOptions {
     # set automatically by the implementation submodule
-    enabled = lib.mkEnableOption "npins implementation for the ${moduleName} module";
+    _enable = lib.mkEnableOption "npins implementation for the ${moduleName} module";
     # TODO : make the nix expression that imports the npins sources
     path = mkPathOption "where to store the lock file" "${mod.path}/npins";
     extraOptions = lib.mkOption {
@@ -61,7 +61,7 @@ in
   };
 
   #
-  config = mkIfEnableAnd cfg.enable {
+  config = mkIfEnableAnd cfg._enable {
     # make sure the configuration path exist
     systemd.tmpfiles.rules = [
       "d ${cfg.path} 0755 root root - -"
@@ -69,11 +69,11 @@ in
 
     systemd.services."${serviceName}-npins" = {
         description = "npins sync for the ${moduleName} module";
-        # TODO : maybe use some other target ?
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ mod.service.name ];
+        before = [ mod.service.name ];
         after = [ "network.target" ];
         environment = envVars;
-        # TODO : change this
+        # TODO : replace by oneshot
         serviceConfig = {
           Type = "simple";
           ExecStart = lib.getExe script;

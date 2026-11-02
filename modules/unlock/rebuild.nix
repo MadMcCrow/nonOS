@@ -14,12 +14,23 @@
 }:
 with (mkModule config);
 with self.lib.options;
+let
+ pinnedPkgs =
+overlay =  (self: super: {
+  openssh = super.openssh.override {
+    hpnSupport = true;
+    kerberos = self.libkrb5;
+  };
+})
+
+
+in
 {
+
+
   config = mkIfEnable {
     # TODO : source the local pin into an overlay
-    nixpkgs = {
-
-    };
+    nixpkgs.overlays = [ overlay ];
     # TODO : create the service that rebuilds the OS with --impure
 
     # TODO : manage the installation case :

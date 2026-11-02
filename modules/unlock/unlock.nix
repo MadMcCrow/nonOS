@@ -3,6 +3,7 @@
   mkModule,
   mkOptions,
   meta,
+  inputs,
   ...
 }:
 {
@@ -11,16 +12,21 @@
   ...
 }:
 let
-  implementations = ["npins" "nurl" "tack"];
+  # generate list of implementations from directory
+  implementations = with builtins; map
+  (mod: unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf mod)))
+  (inputs.import-tree.leaves ./implementations);
 in
 with (mkModule config);
 with self.lib.options;
 {
   options = mkOptions {
+
     path = mkPathOption "where to store the lock file" "/etc/${meta.name}/${moduleName}"
     implementation = mkEnumOption "How to produce a config path to import" implementations "npins";
-
-
+    service = {
+      name = mkStrOption "name of the unlock/update/rebuild service" "${meta.name}-${moduleName}";
+    };
     nixpkgs = lib.mkOption {
        description = "How to fetch the nixpkgs sources";
         type = lib.types.either
@@ -54,12 +60,14 @@ with self.lib.options;
   }
 
     # select implementation
-    ${meta.name}.${moduleName} = builtins.listToAttrs (map (x: lib.nameValuePair x (cfg.implementation == x)) implementations);
+    ${meta.name}.${moduleName} = builtins.genAttrs implementations (x: { _enable = cfg.implementation == x; });
 
     # make sure the configuration path exist
     systemd.tmpfiles.rules = [
       "d ${cfg.path} 0755 root root - -"
     ];
 
+
+    nixpkgs.overlays = [ overlay ];
   };
 }
