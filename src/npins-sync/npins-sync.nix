@@ -13,7 +13,7 @@ in
 stdenvNoCC.mkDerivation {
   pname = "npins-sync";
   inherit (self.lib.meta) version;
-  src = ./npins-sync;
+  src = ./.;
   patchPhase = ''
     # patch shell
     patchShebangs ${script}

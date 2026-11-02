@@ -1,5 +1,5 @@
 # flake part module for exposing lib
-{
+args@{
   inputs,
   self,
   lib,
@@ -7,14 +7,12 @@
 }:
 with builtins;
 let
-  inherit (inputs.nixpkgs) lib;
-  mksysPair = mod: {
-    name = unsafeDiscardStringContext (baseNameOf (lib.removeSuffix ".nix" mod));
-    value = import mod (inputs // { inherit lib; });
-  };
+  # get all the paths to import (everything but the default)
+  files = inputs.import-tree (i: i.matchNot ".*/default.nix") (i: i.leaves (./.));
 in
 {
-  flake.lib = builtins.listToAttrs (
-    inputs.import-tree (i: i.map mksysPair) (i: i.leaves (self + "/lib"))
-  );
+  # import all
+  flake.lib = lib.genAttrs' files (mod: lib.nameValuePair
+   (unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf mod)))
+   (import mod args));
 }

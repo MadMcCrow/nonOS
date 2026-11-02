@@ -16,7 +16,7 @@ let
 in
 {
   # expose our configuration
-  flake.nixosConfigurations.image = image "x86-64_linux";
+  flake.nixosConfigurations.image = image "x86_64-linux";
 
   perSystem =
     {

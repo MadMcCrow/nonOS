@@ -7,7 +7,9 @@
 #   NPINS_SYNC_GIT_URL     nixpkgs git url
 #   NPINS_SYNC_GIT_BRANCH  nixpkgs git branch (needed with GIT_URL)
 #   NPINS_SYNC_FORCE       clear and reinit if update fails (default: false)
+#   NPINS_SYNC_OPTIONS     extra options for npins (word split)
 
+set -u
 
 ### Parsing commandline arguments
 
@@ -51,9 +53,6 @@ while getopts "d:c:u:b:fh" opt; do
         f)
             NPINS_SYNC_FORCE=true
             ;;
-        h)
-            usage
-            ;;
         *)
             usage
             ;;
@@ -80,63 +79,72 @@ case "$mode" in
         [ -n "$NPINS_SYNC_GIT_BRANCH" ] || usage
         ;;
     *)
-        # No mode selected on CLI; validate environment defaults
+        # No mode selected on CLI; use the environment
         if [ -n "$NPINS_SYNC_CHANNEL" ]; then
-            [ -z "$NPINS_SYNC_GIT_URL" ] &&
-                [ -z "$NPINS_SYNC_GIT_BRANCH" ] || usage
+            [ -z "$NPINS_SYNC_GIT_URL" ] && [ -z "$NPINS_SYNC_GIT_BRANCH" ] || usage
+            mode=channel
         else
-            [ -n "$NPINS_SYNC_GIT_URL" ] &&
-                [ -n "$NPINS_SYNC_GIT_BRANCH" ] || usage
+            [ -n "$NPINS_SYNC_GIT_URL" ] && [ -n "$NPINS_SYNC_GIT_BRANCH" ] || usage
+            mode=git
         fi
         ;;
 esac
 
-
 ### defaults
-# Only evaluate those after parsing arguments and env-vars
+NPINS_DIR=$NPINS_SYNC_DIR
 NPINS_BIN="npins"
-NPINS_OPTIONS="$NPINS_SYNC_OPTIONS --directory $NPINS_DIR"
 
-# method to initialize if directory is empty
-init_npins() {
-  # init bare repository
-  $NPINS_BIN $NPINS_OPTIONS init --bare  || return $?
-  case "$mode" in
-      channel)
-          $NPINS_BIN $NPINS_OPTIONS add --name nixpkgs channel $NPINS_SYNC_CHANNEL || return $?
-          ;;
-      git)
-          $NPINS_BIN $NPINS_OPTIONS add --name nixpkgs git $NPINS_SYNC_GIT_URL --branch $NPINS_SYNC_GIT_BRANCH || return $?
-          ;;
-  esac
+mkdir -p "$NPINS_DIR"
+
+run_npins() {
+    # options are meant to be word split
+    # shellcheck disable=SC2086
+    $NPINS_BIN $NPINS_SYNC_OPTIONS --directory "$NPINS_DIR" "$@"
 }
 
-# call update
+# initialize if directory is empty
+init_npins() {
+    run_npins init --bare || return $?
+    case "$mode" in
+        channel)
+            run_npins add --name nixpkgs channel "$NPINS_SYNC_CHANNEL"
+            ;;
+        git)
+            run_npins add --name nixpkgs git "$NPINS_SYNC_GIT_URL" --branch "$NPINS_SYNC_GIT_BRANCH"
+            ;;
+    esac
+}
+
 # TODO : detect if we are in channel or branch mode
 #        and update accordingly ( might need to remove and add again)
 update_npins() {
-    $NPINS_BIN $NPINS_OPTIONS update --full || return $?
+    run_npins update --full
 }
 
-# check for sources at target :
+# no sources yet : initialize
 if [ ! -f "$NPINS_DIR/sources.json" ]; then
-    init_npins
-    init_status=$?
+    init_status=0
+    init_npins || init_status=$?
     echo "initialized npins source directory $NPINS_DIR with exit code $init_status"
     exit "$init_status"
 fi
 
-# try update first : handle errors later :
-if update_npins; then
-      echo "npins update succeeded."
-    else if [ "$NPINS_SYNC_FORCE" = true ]; then
-        rm "$NPINS_DIR/*" -Rf
-        init_npins
-        init_status=$?
-        echo "reinitialized npins source directory $NPINS_DIR with exit code $init_status"
-        exit "$init_status"
-    else
-        update_status=$?
-        echo "npins update failed (exit status $update_status)." >&2
-    fi
+# try update first
+update_status=0
+update_npins || update_status=$?
+
+if [ "$update_status" -eq 0 ]; then
+    echo "npins update succeeded."
+    exit 0
 fi
+
+if [ "$NPINS_SYNC_FORCE" = true ]; then
+    find "$NPINS_DIR" -mindepth 1 -delete
+    init_status=0
+    init_npins || init_status=$?
+    echo "reinitialized npins source directory $NPINS_DIR with exit code $init_status"
+    exit "$init_status"
+fi
+
+echo "npins update failed (exit status $update_status)." >&2
+exit "$update_status"

@@ -107,7 +107,7 @@
           ./iso
           ./lib
           ./modules
-          ./packages
+          # ./packages
           ./src
         ];
       }

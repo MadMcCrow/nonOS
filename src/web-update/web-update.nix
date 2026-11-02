@@ -7,7 +7,7 @@
 stdenvNoCC.mkDerivation {
   pname = "webupdate";
   version = "0.1";
-  src = ./.;
+  src = ./src;
   installPhase = ''
     mkdir -p $out
     cp index.html $out/
