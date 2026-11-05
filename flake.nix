@@ -1,10 +1,10 @@
-# nixpkgs
+# nixpkgs flake for nonOS. not the best thing, see docs/flake.md to understand my disappointment
 {
   description = "NonOS is an opinionated OS based on NixOS";
 
   inputs = {
     # nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
 
     # flake support
     flake-parts = {
@@ -78,38 +78,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-
-  outputs =
-    inputs@{
-      flake-parts,
-      nixpkgs,
-      self,
-      import-tree,
-      treefmt-nix,
-      git-hooks-nix,
-      ...
-    }:
-    flake-parts.lib.mkFlake { inherit inputs; } (
-      { lib, ... }: {
-        # this is done to avoid spamming until things are stabilized
-        systems = [
-          "x86_64-linux"
-          "aarch64-darwin"
-        ]; # lib.systems.flakeExposed;
-
-        # TODO : replace by auto-detect directories
-        imports = [
-          ./dev # shells and development tools
-          # (sources can be in packages or src depending on who develops it)
-          # ./docs -> need to implement a man/doc output
-          # ./hosts -> TODO
-          ./image
-          ./iso
-          ./lib
-          ./modules
-          # ./packages
-          ./src
-        ];
-      }
-    );
+  # shim
+  outputs = inputs: import ./flake inputs;
 }
