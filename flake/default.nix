@@ -12,7 +12,7 @@ let
     # list the root of the flake
     (readDir root)));
 in
-flake-parts.lib.mkFlake { inherit inputs; } (
+(flake-parts.lib.mkFlake { inherit inputs; } (
   { lib, ... }: {
     # this is done to avoid spamming until things are stabilized
     systems = [
@@ -23,4 +23,4 @@ flake-parts.lib.mkFlake { inherit inputs; } (
     # autodect importable directories
     imports = directories ../.;
   }
-)
+)) // {nixpkgs = inputs.nixpkgs;}
