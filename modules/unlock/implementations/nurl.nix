@@ -18,18 +18,22 @@ with (mkModule config);
 with self.lib.options;
 let
   # generate the argument to use for nurl
-  url = if mod.nixpkgs ? channel then "https://channels.nixos.org/${mod.channel}/nixexprs.tar.zst" else "${mod.url} ${mod.branch}";
+  url =
+    if mod.nixpkgs ? channel then
+      "https://channels.nixos.org/${mod.channel}/nixexprs.tar.zst"
+    else
+      "${mod.url} ${mod.branch}";
 
   # where we will store the nix fetcher expression
   nixpkgsSource = cfg.source;
 
   # we default to a version of the nixpkgs
-  updateNixpkgs = pkgs.writeShellScriptBin mod.update.program
-  ''
+  updateNixpkgs = pkgs.writeShellScriptBin mod.update.program.name ''
+    # remove existing pin :
+    rm -Rf ${nixpkgsSource}
     # redirect nurl output to a file, ready to be imported by nix
-    ${pkgs.nurl} url > ${nixpkgsSource};
+    ${pkgs.nurl} ${url} > ${nixpkgsSource};
   '';
-
 in
 {
   # interface
@@ -41,15 +45,16 @@ in
 
   # WIP
   config = mkIfEnableAnd cfg.enable {
-
     # set our own update package
     ${meta.name}.${moduleName} = {
-      update.package = updateNixpkgs;
-      nixpkgs.import = "import ${nixpkgsSource}"
+      update.program.package = updateNixpkgs;
+      system.nixpkgs = "import ${nixpkgsSource}";
+    };
 
-    # make sure the file exists
+    # make sure the file exists and contains the installed source
+    # it will be replaced by `updateNixpkgs`
     systemd.tmpfiles.rules = [
       "f ${nixpkgsSource} 0644 root root - <nixpkgs>"
-      ];
+    ];
   };
 }

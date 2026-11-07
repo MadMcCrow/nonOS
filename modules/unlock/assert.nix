@@ -26,6 +26,5 @@ in
       assertion = (optionTrue "nonOS.image.enable") || (optionTrue "image.repart.enable");
       message = "unlock conflicts with image, only use one at a time";
     }
-
   ];
 }

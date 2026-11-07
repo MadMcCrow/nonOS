@@ -8,5 +8,5 @@ let
   };
 in
 import flake-compat {
-    src = root;
-  };
+  src = root;
+}

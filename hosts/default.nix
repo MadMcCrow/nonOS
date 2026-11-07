@@ -5,19 +5,23 @@
   ...
 }:
 let
-  root = ./.;
+  inherit (inputs.nixpkgs) lib;
   # list every directory that contain configuration.nix
-  hosts =  lib.filterAttrs (n: v: lib.pathIsRegularFile v) (lib.genAttrs (n: lib.traceVal "${root}/${n}/configuration.nix") (self.lib.packages.listDir root));
-
+  hosts = lib.filterAttrs (n: v: lib.pathIsRegularFile v) (
+    lib.mapAttrs (n: k: "${./.}/${n}/configuration.nix") (builtins.readDir ./.)
+  );
 in
 {
   flake = {
+    # hosts are exposed directly as output
     inherit hosts;
-
-    nixosConfigurations = mapAttrs (n: v: lib.nixosSystem {
-      configuration = hosts;
-      specialArgs.${meta.name} = self;
-    }) hosts;
+    # and as built configuration
+    nixosConfigurations = lib.mapAttrs (
+      n: v:
+      lib.nixosSystem {
+        configuration = hosts;
+        specialArgs.${self.lib.meta.name} = self;
+      }
+    ) hosts;
   };
-
 }

@@ -28,6 +28,7 @@ with self.lib.options;
       {
         assertion = cfg.enable;
         message = "tack unlock is not implemented yet";
-      } ];
+      }
+    ];
   };
 }

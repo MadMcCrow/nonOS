@@ -14,10 +14,12 @@ args@{
     with lib;
     with builtins;
     {
-      packages = with self.lib.packages; genPkgs {
-        inherit pkgs args;
-        paths = listNixPkgs ./.;
-      };
+      packages =
+        with self.lib.packages;
+        genPkgs {
+          inherit pkgs args;
+          paths = listNixPkgs ./.;
+        };
 
       # add an update script
       apps.update =

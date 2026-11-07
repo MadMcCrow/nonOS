@@ -15,26 +15,26 @@
 with (mkModule config);
 with self.lib.options;
 let
-# make the config file reference this flake
-thisFlake = "${self}";
+  # make the config file reference this flake
+  thisFlake = "${self}";
 
-# see https://github.com/NixOS/nixpkgs/blob/60c94fbaddc18ec07ad85829dcef62fdc22907cb/nixos/default.nix
-systemConfiguration = pkgs.writeText "${meta.name}-${moduleName}-system" ''
-let
-  nixpkgs = import ${mod.nixpkgs.import};
-  ${meta.name} = ${thisFlake};
-in
-import "$${nixpkgs}/nixos/lib/eval-config.nix" {
-  system = builtins.currentSystem;
-  modules = [
-    ${cfg.configuration}
-    ${meta.name}.nixosModules.${moduleName}
-  ];
-    specialArgs = {
-      inherit ${meta.name};
-    };
-  }
-'';
+  # see https://github.com/NixOS/nixpkgs/blob/60c94fbaddc18ec07ad85829dcef62fdc22907cb/nixos/default.nix
+  systemConfiguration = pkgs.writeText "${meta.name}-${moduleName}-system" ''
+    let
+      nixpkgs = ${cfg.nixpkgs};
+      ${meta.name} = ${thisFlake};
+    in
+    import "$${nixpkgs}/nixos/lib/eval-config.nix" {
+      system = builtins.currentSystem;
+      modules = [
+        ${cfg.configuration}
+        ${meta.name}.nixosModules.${moduleName}
+      ];
+        specialArgs = {
+          inherit ${meta.name};
+        };
+      }
+  '';
 in
 {
   options = mkOptions {
@@ -52,15 +52,23 @@ in
       configDir = mkBoolOption "symlink system.nix to ${mod.configDir}" true;
       etc.nixos = mkBoolOption "symlink system.nix to /etc/nixos" false;
     };
+    nixpkgs = mkStrOption "how to import nixpkgs in the system.nix file" "import <nixpkgs>";
   };
 
   config = mkIfEnable {
     # symlink the config file, for visibility
     systemd.tmpfiles.rules =
-    (lib.optional cfg.symlink.configDir "L+ ${mod.configDir}/system.nix - - - - ${systemConfiguration}") ++
-    (lib.optional cfg.symlink.etc.nixos "L+ /etc/nixos/system.nix - - - - ${systemConfiguration}");
-     # set nixPath for evaluation
-     nix.nixPath = lib.optional cfg.nixPath "nixos-system=${systemConfiguration}"
-  };
+      (lib.optional cfg.symlink.configDir "L+ ${mod.configDir}/system.nix - - - - ${systemConfiguration}")
+      ++ (lib.optional cfg.symlink.etc.nixos "L+ /etc/nixos/system.nix - - - - ${systemConfiguration}");
+    # set nixPath for evaluation
+    nix.nixPath = lib.optional cfg.nixPath "nixos-system=${systemConfiguration}";
 
+    # make sure we are not counted as installed by a flake
+    nixpkgs.flake = lib.mkForce {
+      source = null;
+      setNixPath = false;
+      setFlakeRegistry = false;
+    };
+    system.autoUpgrade.flake = lib.mkForce null;
+  };
 }

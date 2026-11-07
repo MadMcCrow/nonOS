@@ -1,5 +1,5 @@
-# pull the update
-# We could use either https://github.com/nlewo/comin
+# rebuild and try to apply the new config
+# MAYBE : send a message to the user that the system was updated
 {
   mkModule,
   mkOptions,
@@ -14,26 +14,9 @@
 }:
 with (mkModule config);
 with self.lib.options;
-let
- pinnedPkgs =
-overlay =  (self: super: {
-  openssh = super.openssh.override {
-    hpnSupport = true;
-    kerberos = self.libkrb5;
-  };
-})
-
-
-in
 {
-
-
   config = mkIfEnable {
-    # TODO : source the local pin into an overlay
-    nixpkgs.overlays = [ overlay ];
-    # TODO : create the service that rebuilds the OS with --impure
-
-    # TODO : manage the installation case :
-    # ie. disable sourcing when installing, or at least source a fixed starting point
+    # TODO : make sure nixOS rebuild use the system.nix entry point and disable the others
+    # TODO : make sure the nixOS autoUpgrade service uses our system. make sure the service to update is called first.
   };
 }

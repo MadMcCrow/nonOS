@@ -12,7 +12,10 @@ let
 in
 {
   # import all
-  flake.lib = lib.genAttrs' files (mod: lib.nameValuePair
-   (unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf mod)))
-   (import mod args));
+  flake.lib = lib.genAttrs' files (
+    mod:
+    lib.nameValuePair (unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf mod))) (
+      import mod args
+    )
+  );
 }
