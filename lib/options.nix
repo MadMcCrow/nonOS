@@ -73,4 +73,6 @@
   mkEnumOption =
     description: enum: default:
     mkTypedOption (lib.types.enum enum) description default;
+
+  mkPkgOption = mkTypedOption types.package;
 }

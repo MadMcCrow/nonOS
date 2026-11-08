@@ -1,9 +1,12 @@
-# update the pins before rebuilding the OS
+# update.nix
+# update the pinned nixpkgs. the rebuild itself is done by system.autoUpgrade (see rebuild.nix)
 {
   mkModule,
   mkOptions,
   meta,
+  moduleName,
   self,
+  inputs,
   ...
 }:
 {
@@ -13,37 +16,52 @@
 }:
 with (mkModule config);
 with self.lib.options;
+let
+  # one backend per file in ./implementations
+  implementations = map (
+    file: builtins.unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf file))
+  ) (inputs.import-tree.leaves ./implementations);
+in
 {
   options = mkOptions {
     program = {
       name = mkStrOption "name for the update package" "${meta.name}-update";
-      package = lib.mkOption {
-        description = "package to use to update the unlock nixpkgs version";
-        type = lib.types.package;
-        internal = true;
-      };
+      package = mkPkgOption "package to use to update the unlock nixpkgs version" null;
     };
     implementation = mkEnumOption "How to produce a config path to import" implementations "nurl";
-    service.name = mkStrOption "name of the unlock/update/rebuild service" "${meta.name}-${moduleName}";
+    service.name = mkStrOption "name of the service that updates the pin before nixos-upgrade runs" "${meta.name}-${moduleName}";
   };
 
   config = mkIfEnable {
-    assertions = {
-      # we can't use multiple backend at once.
-      # changing backend might cause issues.
-      # MAYBE: add a warning at eval if the backend changes from the currently running OS.
-      assertion =
-        lib.lists.count lib.trivial.id (map (x: config.${moduleName}.${x}.enable) implementations) == 1;
-      message = "only one of tack and npins can be used as a backend for the source pinning";
-      # TODO : make sure the version of nixpkgs used in nonOS is never more recent than the version pinned by the system
-    };
+    assertions = [
+      {
+        # we can't use multiple backend at once.
+        # changing backend might cause issues.
+        # MAYBE: add a warning at eval if the backend changes from the currently running OS.
+        assertion = lib.count lib.id (map (x: mod.${x}._enable) implementations) == 1;
+        message = "only one of ${lib.concatStringsSep ", " implementations} can be used as a backend for the source pinning";
+      }
+      # TODO : make sure the version of nonOS nixpkgs is never more recent than the version pinned by the system
+      #        (to be discussed)
+    ];
+
     # select implementation
-    ${meta.name}.${moduleName} = builtins.genAttrs implementations (x: {
-      _enable = cfg.implementation == x;
+    ${meta.name}.${moduleName} = lib.genAttrs implementations (x: {
+      enable = cfg.implementation == x;
     });
 
-    # TODO : create the service that calls the script to update the pinned version of nixpkgs.
-
-    # TODO : pin/update version of nonOS
+    # runs the update program. started by nixos-upgrade (see rebuild.nix)
+    systemd.services.${cfg.service.name} = {
+      description = "update the pinned nixpkgs";
+      restartIfChanged = false;
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = lib.getExe cfg.program.package;
+      };
+    };
+    # add to the packages to run manually if necessary
+    environment.systemPackages = [ cfg.program.package ];
   };
 }

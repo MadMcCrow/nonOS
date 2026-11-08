@@ -10,8 +10,23 @@ tools that inspired this :
  - impurity
  - comin
 
- # Implementation
- 
- The entry point to build the configuration is the new `system.nix` from 26.05. In it, we source the nixpkgs version to use to build nonOS.
+# Implementation
 
- to achieve this result, there's multiple tools we can use, the simplest being `nurl`. the simplest approach is to overwrite a symlink file and replace it at fixed times with a new
+The entry point to build the configuration is the new `system.nix` from 26.05. In it, we source the nixpkgs version to use to build nonOS.
+
+ - `system.nix` generates that entry point. It loads nonOS with flake-compat (the `default.nix` at the root) and your `configuration`.
+ - `nixos-rebuild` finds it through the `nixos-system` entry in `NIX_PATH`.
+ - `unlock.nix` holds the shared options and the config directory (`/etc/nonOS/unlock`).
+ - `update.nix` defines the backend option and a service that updates the pin.
+ - `rebuild.nix` configures `system.autoUpgrade`. The update service runs before it.
+ - `implementations/` has one file per backend : `nurl` (channel tarball), `npins`, `tack` (stub).
+ - `assert.nix` forbids using unlock with image.
+
+# First boot
+
+The pin does not exist until the update service ran once :
+
+    sudo systemctl start nonOS-unlock.service
+    sudo nixos-rebuild switch
+
+`dates`, `operation` and `allowReboot` are the usual `system.autoUpgrade` options.
