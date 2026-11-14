@@ -81,16 +81,16 @@ let
     mapAttrs (n: v: mkMod "${rootdir}/${n}") (
       lib.filterAttrs (n: v: (match "^[. _].*" n == null) && v == "directory") (readDir rootdir)
     );
-in
-rec {
-  flake = {
-    nixosModules = modules // {
-      default = _: { imports = builtins.attrValues modules; };
-    };
-    # evaluate system to get options :
-    # nixosModulesOptions = (lib.nixosSystem { modules = [ (import (self + "/checks/minimal.nix") {
-    #  nixpkgs = inputs.nixpkgs;
-    #  nonOS = self;
-    # }) ]; }).options.nonOS;
-  };
+
+  # default imports everything : will break
+  default =  _: { imports = builtins.attrValues modules };
+
+  # TODO : Generate doc
+  # evaluate system to get options :
+  # nixosModulesOptions = (lib.nixosSystem { modules = [ (import (self + "/checks/minimal.nix") {
+  #  nixpkgs = inputs.nixpkgs;
+  #  nonOS = self;
+  # }) ]; }).options.nonOS;
+in {
+  flake.nixosModules = modules;
 }

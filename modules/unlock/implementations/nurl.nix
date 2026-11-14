@@ -34,13 +34,13 @@ let
       "${mod.url} ${mod.branch}";
 
   # we default to a version of the nixpkgs
-  updateNixpkgs = pkgs.writeShellScriptBin mod.update.program.name ( map (x: ''
+  updateNixpkgs = pkgs.writeShellScriptBin mod.update.program.name (builtins.concatStringSep "\n" ( map (x: ''
     NURL_SOURCE_FILE="${cfg.sources.${x}}"
     # remove existing pin if any
     rm -Rf $NURL_SOURCE_FILE && true
     # redirect nurl output to a file, ready to be imported by nix
     ${pkgs.nurl} ${url} > $NURL_SOURCE_FILE
-  '' pinned);
+  '' pinned)));
 in
 {
   # interface

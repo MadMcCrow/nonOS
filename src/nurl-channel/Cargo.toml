@@ -2,5 +2,14 @@
 name = "nurl-channel"
 version = "0.1.0"
 edition = "2024"
+description = "Track nixpkgs channels and git sources, and generate nurl fetcher files"
 
 [dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+eyre = "0.6"
+git2 = { version = "0.20", default-features = false, features = ["https"] }
+notify-rust = "4"
+nurl = { git = "https://github.com/MadMcCrow/nurl", branch = "nurl-lib" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = "3"

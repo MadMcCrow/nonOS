@@ -58,6 +58,7 @@ with self.lib.options;
         !((optionTrue "${meta.name}.image.enable") || (optionTrue "image.repart.enable"));
         message = "${moduleName} conflicts with image, only use one at a time";
       }
+    ];
 
     # make sure the configuration path exist
     systemd.tmpfiles.rules = [

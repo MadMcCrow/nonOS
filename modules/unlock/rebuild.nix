@@ -28,8 +28,8 @@ in
     program = {
       name = mkStrOption "name of the ${meta.name} (update &) rebuild command" "${meta.name}-rebuild";
       package = mkPkgOption "package to use to update the unlock nixpkgs version" rebuild;
-    }
-  }
+    };
+  };
   config = mkIfEnable (
     lib.mkMerge [
       {
