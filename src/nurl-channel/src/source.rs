@@ -1,5 +1,7 @@
 //! What a tracked source must provide.
 
+use eyre::Result;
+
 /// A source we can follow.
 pub trait Source {
     /// Identifier of the newest upstream version.

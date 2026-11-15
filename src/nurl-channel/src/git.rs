@@ -4,7 +4,7 @@ use eyre::{Result, eyre};
 use git2::{Direction, Remote};
 use serde::{Deserialize, Serialize};
 
-use crate::origin::Origin;
+use crate::source::Source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Git {
@@ -14,7 +14,7 @@ pub struct Git {
     pub branch: String,
 }
 
-impl Origin for Git {
+impl Source for Git {
     /// Same as `git ls-remote <url> refs/heads/<branch>`, without git.
     fn latest(&self) -> Result<String> {
         let mut remote = Remote::create_detached(self.url.as_str())?;

@@ -1,20 +1,21 @@
-//! Store currently applied source to a json file
+//! Store the sources and the currently applied version in a json file
 
+use std::{collections::BTreeMap, fs, path::PathBuf};
 
-use std::fs; // for reading an writing
+use eyre::{Result, WrapErr, eyre};
 use serde::{Deserialize, Serialize};
-use crate::{channel::Channel, git::Git, source::Source};
-use crate::lib::write_atomic;
 
-/// A source, as written in the configuration file.
-#[derive(Clone, Serialize, Deserialize)]
+use crate::{channel::Channel, git::Git, source::Source, write_atomic};
+
+/// A source, as written in the state file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Pin {
     Git(Git),
     Channel(Channel),
 }
 
-/// we convert both types of entries to a PIN class for storage
+/// both kinds of pins are handled the same way
 impl Source for Pin {
     fn latest(&self) -> Result<String> {
         match self {
@@ -31,76 +32,68 @@ impl Source for Pin {
 }
 
 /// One entry of the state file.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     #[serde(flatten)]
-    source: Pin,
+    pub source: Pin,
     /// what was fetched last
     #[serde(default)]
-    last: Option<String>,
-};
+    pub last: Option<String>,
+}
+
 impl Entry {
-    pub fn new(pin : &Pin) -> Self {
-        Self {
-            pin,
-            None // default to "no last"
-        }
+    pub fn new(source: Pin) -> Self {
+        Self { source, last: None }
     }
-};
+}
 
 /// the state
 pub struct State {
-  file : Path,
-  map  : std::collections::BTreeMap<String, Entry>,
-};
-
+    path: PathBuf,
+    map: BTreeMap<String, Entry>,
+}
 
 impl State {
-    /// CTR like function to create a state
-    pub fn new(new_path: impl AsRef<Path>) -> Self {
-        Self {
-            file : new_path.as_path(),
-            map : load(self, file),
-        }
+    /// read the state file
+    pub fn load(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
+        let text = fs::read_to_string(&path)
+            .wrap_err_with(|| format!("reading {}", path.display()))?;
+        let map = serde_json::from_str(&text)
+            .wrap_err_with(|| format!("parsing {}", path.display()))?;
+        Ok(Self { path, map })
     }
 
-    /// turns the JSON into a structured config
-    pub fn load(mut &self) -> Result<()> {
-        let text = fs::read_to_string(&self.path).wrap_err_with(|| format!("reading {}", self.file.display()))?;
-        self.map = serde_json::from_str(&text).wrap_err_with(|| format!("parsing {}", self.file.display()));
-        Ok()
-    }
-
-    /// opposite of load fn
+    /// write the state file
     pub fn save(&self) -> Result<()> {
-        match serde_json::to_string_pretty(self.map) {
-            Ok(text) => write_atomic(&self.path, text)
-            Err(error) => Err("failed to convert to json : {error}")
-        }
+        let text = serde_json::to_string_pretty(&self.map)?;
+        write_atomic(&self.path, &text)
+            .wrap_err_with(|| format!("writing {}", self.path.display()))
     }
 
-    /// search for a key and get a reference
-    /// NOTE : enforces lifetime with <'a>
-    fn find<'a>(&'a self, name : &'a String) -> Result<&'a Entry> {
-        match self.map.get() {
-               Some(x) =>  Ok(x),
-               None => Err("unknown source: {name}"),
-            }
-        }
+    /// all the source names
+    pub fn names(&self) -> Vec<String> {
+        self.map.keys().cloned().collect()
+    }
 
-    /// be explicit for add
-    fn add(& self, name : &String, pin : &Pin) -> Result<()> {
-        match self.map.try_insert(name,  Entry.new(pin)) {
-            Err(x) =>  Err("pin {name} already exists")
-            _ => Ok()
-        }
+    pub fn find(&self, name: &str) -> Result<&Entry> {
+        self.map
+            .get(name)
+            .ok_or_else(|| eyre!("unknown source: {name}"))
     }
-    /// explicit update pin last
-    fn update(& self, name : &String, update : &String) -> Result<()> {
-        match self.map.get(name) {
-            Some(x) =>  self.map.insert(name, Entry {x.pin , update})?;
-            None => Err("Key doesn't exist");
-        }
-        Ok()
+
+    pub fn find_mut(&mut self, name: &str) -> Result<&mut Entry> {
+        self.map
+            .get_mut(name)
+            .ok_or_else(|| eyre!("unknown source: {name}"))
     }
-};
+
+    /// add a new source. fails if the name is taken.
+    pub fn add(&mut self, name: &str, source: Pin) -> Result<()> {
+        if self.map.contains_key(name) {
+            return Err(eyre!("source {name} already exists"));
+        }
+        self.map.insert(name.to_owned(), Entry::new(source));
+        Ok(())
+    }
+}

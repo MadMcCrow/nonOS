@@ -1,27 +1,28 @@
 //! Immutable config
 //!  initialized at start with the arguments or with env-vars
 
-use std::sync::OnceLock;
-use crate::state::State;
+use std::{path::PathBuf, sync::OnceLock};
+
 use clap::{Parser, Subcommand};
+use eyre::{Result, eyre};
 
 #[derive(Parser)]
 #[command(version, about)]
-struct Cli {
+pub struct Cli {
     /// configuration directory
     #[arg(short, long, env = "NURL_CHANNEL_DIR")]
-    dir: PathBuf,
+    pub dir: PathBuf,
 
     /// Whether to notify through DBUS or not
     #[arg(short, long, env = "NURL_CHANNEL_NOTIFY")]
-    notify: bool,
+    pub notify: bool,
 
     #[command(subcommand)]
-    command: Command,
+    pub command: Command,
 }
 
 #[derive(Subcommand)]
-enum Command {
+pub enum Command {
     /// show which sources have a new version
     Check {
         /// only this source
@@ -37,29 +38,25 @@ enum Command {
     },
 }
 
-
+/// What the rest of the program needs to know.
 pub struct Config {
     pub notify: bool,
-    pub dir: impl AsRef<Path>,
+    pub dir: PathBuf,
 }
 
 // a singleton
 static CONFIG: OnceLock<Config> = OnceLock::new();
 
 impl Config {
-    pub fn init(config: Config) {
+    /// set the config. fails if already set.
+    pub fn init(config: Config) -> Result<()> {
         CONFIG
             .set(config)
-            .expect("Config already initialized");
+            .map_err(|_| eyre!("config already initialized"))
     }
 
+    /// get the config. panics if `init` was not called.
     pub fn get() -> &'static Config {
-        CONFIG
-            .get()
-            .expect("Config not initialized")
+        CONFIG.get().expect("Config not initialized")
     }
-}
-
-pub fn init(config: Config) -> Result<(), Config> {
-    CONFIG.set(config)
 }

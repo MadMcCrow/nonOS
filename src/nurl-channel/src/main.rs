@@ -1,25 +1,30 @@
 //! nurl-channel : follow sources, and write the nurl fetcher file for each.
 
-mod channel;
-mod git;
-mod origin;
-mod cli;
-mod state;
+use std::process::ExitCode;
 
-use std::{
-    path::{Path, PathBuf},
-    process::ExitCode,
-};
+use clap::Parser;
+use eyre::Result;
+use nurl_channel::config::{Cli, Command, Config};
 
-use nurl::cli::Opts;
-use crate::source::Source;
-
-
+/// returns true when command succeeded.
 fn run() -> Result<bool> {
-    let cli = Cli::parse();
-    match cli.command {
-        Command::Check { name } => check(&cli.dir, name),
-        Command::Update { name, no_notify } => update(&cli.dir, name, no_notify),
+    let Cli {
+        dir,
+        notify,
+        command,
+    } = Cli::parse();
+    match command {
+        Command::Check { name } => {
+            Config::init(Config { notify, dir })?;
+            nurl_channel::check(name.as_deref())
+        }
+        Command::Update { name, no_notify } => {
+            Config::init(Config {
+                notify: notify && !no_notify,
+                dir,
+            })?;
+            nurl_channel::update(name.as_deref())
+        }
     }
 }
 

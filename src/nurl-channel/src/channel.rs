@@ -6,15 +6,18 @@ use eyre::Result;
 use serde::{Deserialize, Serialize};
 use ureq::ResponseExt;
 
-use crate::origin::Origin;
+use crate::source::Source;
 
+/// a channel representation of a source
+// Clone -> can be copied
+// Debug -> can be formated as text for error messages and such
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Channel {
     /// channel link, e.g. https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz
     pub url: String,
 }
 
-impl Origin for Channel {
+impl Source for Channel {
     /// Follow the redirections and return the final url.
     fn latest(&self) -> Result<String> {
         let response = ureq::head(&self.url).call()?;
