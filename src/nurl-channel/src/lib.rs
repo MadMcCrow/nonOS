@@ -1,11 +1,8 @@
 //! main functions for operations
 
-// expose everything
-// MAYBE : make some things private
 pub mod channel;
 pub mod config;
 pub mod git;
-pub mod notify;
 pub mod source;
 pub mod state;
 
@@ -15,13 +12,20 @@ use std::{
 };
 
 use clap::Parser;
-use eyre::Result;
+use eyre::{Result, eyre};
 use nurl::cli::Opts;
 
-use crate::{config::Config, source::Source, state::State};
+use crate::{
+    config::Config,
+    source::Source,
+    state::{Pin, State},
+};
 
 /// name of the state file, inside the config directory
-const STATE_FILE: &str = "state.json";
+pub const STATE_FILE: &str = "state.json";
+
+/// exit code of `check --exit-code` when an update is available
+pub const EXIT_UPDATE_AVAILABLE: u8 = 3;
 
 /// be more verbose about the meaning of output
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,17 +128,11 @@ pub fn check(name: Option<&str>) -> Result<bool> {
 /// update one source or all. true if no source failed.
 pub fn update(name: Option<&str>) -> Result<bool> {
     let mut state = get_state()?;
-    let config = Config::get();
     let mut ok = true;
     for name in targets(&state, name) {
         match update_one(&mut state, &name) {
             Ok(Outcome::NoChange) => println!("{name}: no change"),
-            Ok(Outcome::Updated(latest)) => {
-                println!("{name}: updated to {latest}");
-                if config.notify {
-                    notify::notify(&name, &latest);
-                }
-            }
+            Ok(Outcome::Updated(latest)) => println!("{name}: updated to {latest}"),
             Err(error) => {
                 eprintln!("{name}: {error:#}");
                 ok = false;
@@ -142,4 +140,26 @@ pub fn update(name: Option<&str>) -> Result<bool> {
         }
     }
     Ok(ok)
+}
+
+/// add a new source to the state file. creates the directory and file if needed.
+pub fn add(name: &str, source: Pin) -> Result<()> {
+    // the name becomes a file name
+    let valid = !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        && !name.starts_with('.');
+    if !valid {
+        return Err(eyre!(
+            "invalid source name {name:?} : use letters, digits, '-', '_' and '.'"
+        ));
+    }
+    let dir = &Config::get().dir;
+    fs::create_dir_all(dir)?;
+    let mut state = State::load_or_default(dir.join(STATE_FILE))?;
+    state.add(name, source)?;
+    state.save()?;
+    println!("{name}: added");
+    Ok(())
 }

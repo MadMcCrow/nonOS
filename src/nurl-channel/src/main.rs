@@ -4,34 +4,40 @@ use std::process::ExitCode;
 
 use clap::Parser;
 use eyre::Result;
-use nurl_channel::config::{Cli, Command, Config};
+use nurl_channel::{
+    EXIT_UPDATE_AVAILABLE,
+    config::{Cli, Command, Config},
+};
 
-/// returns true when command succeeded.
-fn run() -> Result<bool> {
-    let Cli {
-        dir,
-        notify,
-        command,
-    } = Cli::parse();
+fn run() -> Result<ExitCode> {
+    let Cli { dir, command } = Cli::parse();
+    Config::init(Config { dir })?;
     match command {
-        Command::Check { name } => {
-            Config::init(Config { notify, dir })?;
-            nurl_channel::check(name.as_deref())
+        Command::Add { name, source } => {
+            nurl_channel::add(&name, source.into())?;
+            Ok(ExitCode::SUCCESS)
         }
-        Command::Update { name, no_notify } => {
-            Config::init(Config {
-                notify: notify && !no_notify,
-                dir,
-            })?;
-            nurl_channel::update(name.as_deref())
+        Command::Check { name, exit_code } => {
+            let current = nurl_channel::check(name.as_deref())?;
+            if !current && exit_code {
+                Ok(ExitCode::from(EXIT_UPDATE_AVAILABLE))
+            } else {
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+        Command::Update { name } => {
+            if nurl_channel::update(name.as_deref())? {
+                Ok(ExitCode::SUCCESS)
+            } else {
+                Ok(ExitCode::FAILURE)
+            }
         }
     }
 }
 
 fn main() -> ExitCode {
     match run() {
-        Ok(true) => ExitCode::SUCCESS,
-        Ok(false) => ExitCode::FAILURE,
+        Ok(code) => code,
         Err(error) => {
             eprintln!("error: {error:#}");
             ExitCode::FAILURE

@@ -8,7 +8,6 @@ description = "Track nixpkgs channels and git sources, and generate nurl fetcher
 clap = { version = "4", features = ["derive", "env"] }
 eyre = "0.6"
 git2 = { version = "0.20", default-features = false, features = ["https"] }
-notify-rust = "4"
 nurl = { git = "https://github.com/MadMcCrow/nurl", branch = "nurl-lib" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

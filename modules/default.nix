@@ -82,8 +82,12 @@ let
       lib.filterAttrs (n: v: (match "^[. _].*" n == null) && v == "directory") (readDir rootdir)
     );
 
-  # default imports everything : will break
-  default =  _: { imports = builtins.attrValues modules };
+  # default imports everything
+  default =  _: {
+    imports = builtins.attrValues modules;
+    # disable image to ensure it works
+    config.nonOS.image.enable = false;
+  };
 
   # TODO : Generate doc
   # evaluate system to get options :

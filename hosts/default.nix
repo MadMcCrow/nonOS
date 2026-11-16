@@ -8,19 +8,24 @@ args@{
 }:
 let
   inherit (inputs.nixpkgs) lib;
-  # copy every configuration
-  hostConfigs = lib.genAttrs' (inputs.import-tree.leaves ./configurations) (n: v: nameValuePair (import ./names.nix).${lib.removeSuffix ".nix" n} v);
-  hostModules = builtins.mapAttrs (n: v: [v {networking.hostName = lib.mkDefault n;}])
+  # attrset of every configurations
+  configs = builtins.listToAttrs (map (x : lib.nameValuePair (self.lib.modName x) x) (inputs.import-tree.leaves ./configurations));
+  # rename them with the naming scheme
+  hosts = lib.mapAttrs' (
+          n: v:
+          lib.nameValuePair (import ./names.nix).${n}
+          [v {networking.hostName = lib.mkDefault n;}]
+  ) configs;
 in
 {
   flake = {
     # expose our profiles
     profiles = import ./profiles args;
     # hosts are exposed directly as output
-    hosts = hostModules;
+    inherit hosts;
     # and as built configuration
     nixosConfigurations = lib.mapAttrs (
-      n: v:
+    n: v:
       lib.nixosSystem {
         # not really a good idea, but allows installing same host
         # on different machines

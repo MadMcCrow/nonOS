@@ -64,6 +64,19 @@ impl State {
         Ok(Self { path, map })
     }
 
+    /// read the state file, or start empty if it does not exist
+    pub fn load_or_default(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
+        if path.exists() {
+            Self::load(path)
+        } else {
+            Ok(Self {
+                path,
+                map: BTreeMap::new(),
+            })
+        }
+    }
+
     /// write the state file
     pub fn save(&self) -> Result<()> {
         let text = serde_json::to_string_pretty(&self.map)?;
@@ -95,5 +108,67 @@ impl State {
         }
         self.map.insert(name.to_owned(), Entry::new(source));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn channel() -> Pin {
+        Pin::Channel(Channel {
+            url: "https://example.org/nixexprs.tar.xz".into(),
+        })
+    }
+
+    #[test]
+    fn parses_hand_written_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        std::fs::write(
+            &path,
+            r#"{
+              "a": {"kind": "channel", "url": "https://example.org/x.tar.xz"},
+              "b": {"kind": "git", "url": "https://example.org/r.git", "branch": "main", "last": "abc"}
+            }"#,
+        )
+        .unwrap();
+        let state = State::load(&path).unwrap();
+        assert_eq!(state.names(), ["a", "b"]);
+        assert_eq!(state.find("a").unwrap().last, None);
+        assert_eq!(state.find("b").unwrap().last.as_deref(), Some("abc"));
+    }
+
+    #[test]
+    fn save_and_load_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        let mut state = State::load_or_default(&path).unwrap();
+        state.add("a", channel()).unwrap();
+        state.find_mut("a").unwrap().last = Some("v1".into());
+        state.save().unwrap();
+        let again = State::load(&path).unwrap();
+        assert_eq!(again.find("a").unwrap().last.as_deref(), Some("v1"));
+    }
+
+    #[test]
+    fn add_twice_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = State::load_or_default(dir.path().join("state.json")).unwrap();
+        state.add("a", channel()).unwrap();
+        assert!(state.add("a", channel()).is_err());
+    }
+
+    #[test]
+    fn unknown_source_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = State::load_or_default(dir.path().join("state.json")).unwrap();
+        assert!(state.find("nope").is_err());
+    }
+
+    #[test]
+    fn missing_file_is_an_error_for_load() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(State::load(dir.path().join("state.json")).is_err());
     }
 }

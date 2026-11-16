@@ -15,7 +15,7 @@ args@{
     with builtins;
     {
       packages =
-        with self.lib.packages;
+        with self.lib;
         genPkgs {
           inherit pkgs args;
           paths = listNixPkgs ./.;

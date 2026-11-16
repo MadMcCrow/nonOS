@@ -10,7 +10,7 @@ args@{ self, ... }:
     {
       # only expose packages supported on this platform
       packages =
-        with self.lib.packages;
+        with self.lib;
         genPkgs {
           inherit pkgs args;
           paths = listNixPkgs ./.;

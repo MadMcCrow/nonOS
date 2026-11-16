@@ -8,9 +8,6 @@ use ureq::ResponseExt;
 
 use crate::source::Source;
 
-/// a channel representation of a source
-// Clone -> can be copied
-// Debug -> can be formated as text for error messages and such
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Channel {
     /// channel link, e.g. https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz
