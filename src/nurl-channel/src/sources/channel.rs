@@ -1,12 +1,12 @@
 //! Follow a channel link.
 //!
 //! A channel url redirects to the real tarball. The version is in that url.
-
+//!
 use eyre::Result;
 use serde::{Deserialize, Serialize};
 use ureq::ResponseExt;
 
-use crate::source::Source;
+use crate::sources::Source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Channel {
@@ -25,5 +25,17 @@ impl Source for Channel {
     /// We give it the resolved url, so the result is pinned.
     fn nurl_args(&self, latest: &str) -> Vec<String> {
         vec![latest.to_owned()]
+    }
+
+    /// default name of the channel is either
+    fn name(&self) -> &str {
+        if self.url.contains("channels.nixos.org/nixos") {
+            return "nixpkgs";
+        }
+        let filename = self.url
+            .split(['?', '#']).next().unwrap_or("") // remove queries
+            .split('/').next_back().unwrap_or("");  // get last part
+        // remove extensions
+        filename.split('.').next().unwrap_or(filename)
     }
 }

@@ -4,7 +4,7 @@ use eyre::{Result, eyre};
 use git2::{Direction, Remote};
 use serde::{Deserialize, Serialize};
 
-use crate::source::Source;
+use crate::sources::Source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Git {
@@ -31,5 +31,13 @@ impl Source for Git {
 
     fn nurl_args(&self, latest: &str) -> Vec<String> {
         vec![self.url.clone(), latest.to_owned()]
+    }
+
+    fn name(&self) -> &str {
+               self.url
+                   .rsplit('/')
+                   .next()
+                   .unwrap_or(&self.url)
+                   .trim_end_matches(".git")
     }
 }

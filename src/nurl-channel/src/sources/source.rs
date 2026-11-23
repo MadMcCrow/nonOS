@@ -1,4 +1,4 @@
-//! What a tracked source must provide.
+//! General trait of a source
 
 use eyre::Result;
 
@@ -10,4 +10,7 @@ pub trait Source {
 
     /// Arguments for `nurl` that fetch the version `latest`
     fn nurl_args(&self, latest: &str) -> Vec<String>;
+
+    /// produce a name for the source
+    fn name(&self) -> &str;
 }

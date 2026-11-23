@@ -19,6 +19,8 @@
     let
       # local llm support :not recommended because it's heavy
       llmserver = callPackage (self + "/packages/ai/llama-cpp.nix") inputs;
+      #
+      srcDependencies = lib.flatten (map (x: x.nativeBuildInputs) (attrValues self.packages));
     in
     {
       # built dev shell with everything
@@ -29,19 +31,17 @@
           NIX_CONFIG = "experimental-features = nix-command flakes";
 
           packages = [
-            deadnix
-            nixfmt-tree
             npins
             just
             shellcheck
             deadnix
             statix
             nixfmt-tree
-            npins
             just
             git
             fzf
-          ];
+          ] ++
+          srcDependencies;
         };
 
         llm = mkShellNoCC {

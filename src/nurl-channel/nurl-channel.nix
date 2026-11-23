@@ -23,7 +23,7 @@ rustPlatform.buildRustPackage {
   };
 
   nativeBuildInputs = [ pkg-config ];
-  buildInputs = [
+    = [
     openssl
     libgit2
     zlib
