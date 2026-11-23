@@ -4,6 +4,7 @@
 mod channel;
 mod git;
 mod source;
+
 // expose our types direclty ( implicit "as")
 pub use channel::Channel;
 pub use git::Git;

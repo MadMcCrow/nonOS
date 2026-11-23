@@ -6,7 +6,6 @@
 }:
 {
   # import subfolder
-  # TODO : use import-tree
   imports = [
     ./pre-commit.nix
     ./shell.nix

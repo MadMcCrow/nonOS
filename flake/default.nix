@@ -2,7 +2,6 @@
 inputs@{
   self,
   nixpkgs,
-  import-tree,
   flake-parts,
   ...
 }:

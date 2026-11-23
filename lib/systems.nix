@@ -1,5 +1,4 @@
 # modules.nix
-# use import-tree magic to make our custom TOML parser
 {
   self,
   lib,

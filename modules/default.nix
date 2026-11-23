@@ -62,7 +62,10 @@ let
     in
     _: {
       # import apply all the submodules
-      imports = map (x: lib.modules.importApply x (moduleArgs x)) (inputs.import-tree.leaves modulePath);
+      imports = inputs.pastry.importApplyLeaves {
+        dir = modulePath;
+        func = moduleArgs;
+      };
       # Add the root option for the module
       options.${meta.name}.${moduleName} = {
         enable = lib.mkEnableOption moduleName // {

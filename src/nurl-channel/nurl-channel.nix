@@ -22,8 +22,8 @@ rustPlatform.buildRustPackage {
     allowBuiltinFetchGit = true;
   };
 
-  nativeBuildInputs = [ pkg-config ];
-    = [
+  nativeBuildInputs = [
+    pkg-config
     openssl
     libgit2
     zlib

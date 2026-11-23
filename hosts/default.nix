@@ -9,7 +9,7 @@ args@{
 let
   inherit (inputs.nixpkgs) lib;
   # attrset of every configurations
-  configs = builtins.listToAttrs (map (x : lib.nameValuePair (self.lib.modName x) x) (inputs.import-tree.leaves ./configurations));
+  configs = inputs.pastry.genModAttr ./configurations;
   # rename them with the naming scheme
   hosts = lib.mapAttrs' (
           n: v:

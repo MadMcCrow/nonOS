@@ -18,9 +18,7 @@ with (mkModule config);
 with self.lib.options;
 let
   # one backend per file in ./implementations
-  implementations = map (
-    file: builtins.unsafeDiscardStringContext (lib.removeSuffix ".nix" (baseNameOf file))
-  ) (inputs.import-tree.leaves ./implementations);
+  implementations = builtins.attr (inputs.pastry.genModAttr ./implementations);
 in
 {
   options = mkOptions {
